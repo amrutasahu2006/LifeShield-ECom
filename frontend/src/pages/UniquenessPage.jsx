@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 const surveyStats = [
   { pct: '76%', color: '#dc2626', label: 'No Preparedness Score', desc: "Consumers don't know if they're actually prepared" },
@@ -41,6 +42,7 @@ const usps = [
 ]
 
 export default function UniquenessPage() {
+  const navigate = useNavigate()
   const [activeFeature, setActiveFeature] = useState(0)
   const features = [
     { label: '🧠 Preparedness Score', title: 'Preparedness Score: 68/100', body: 'Your household profile (Family of 4, California, Wildfire Risk) has been analyzed. You are missing critical items: a 72-Hour Kit, Pet Evacuation supplies, and a Water Filter. Here is your personalized shopping list to reach 90+/100.', gaps: [['🎒 Emergency Kits','40%','#dc2626'],['💧 Water Supply','45%','#dc2626'],['🩺 First Aid','85%','#16a34a'],['🔥 Fire Safety','60%','#f97316']] },
@@ -48,6 +50,7 @@ export default function UniquenessPage() {
     { label: '🔔 Seasonal Alerts', title: 'Active Alerts for California', body: 'Wildfire Season is approaching (June–September). Based on your location and household profile, we recommend stocking up on Fire Safety Equipment and refreshing your 72-Hour Kit before the season starts.', gaps: [['Wildfire Risk','HIGH ⚠️','#dc2626'],['Hurricane Risk','Low','#16a34a'],['Winter Storm','Medium','#f97316'],['Alert Active','Jun–Sep 2025','#3b82f6']] },
     { label: '📦 Live SCM', title: 'Stock Dashboard — Live', body: 'See real-time inventory levels before you order. 72-Hour Kits are critically low (6 units). A purchase order has been auto-triggered to our Tier-1 supplier. Stock expected Jan 8, 2025.', gaps: [['72-Hr Kit','6 units ⚠️','#dc2626'],['First Aid Kit','85 units ✓','#16a34a'],['Water Filter','28 units 〜','#d97706'],['Fire Ext.','60 units ✓','#16a34a']] },
   ]
+  const detailRoutes = ['/safety-profile', '/loyalty', '/safety-profile', '/scm-dashboard']
   const f = features[activeFeature]
 
   return (
@@ -169,7 +172,11 @@ export default function UniquenessPage() {
                 <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '12px', color: '#f1f5f9' }}>{f.title}</h3>
                 <p style={{ color: '#94a3b8', fontSize: '14px', lineHeight: '1.7', marginBottom: '16px' }}>{f.body}</p>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  <span style={{ background: '#dc2626', color: '#fff', padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '600' }}>View Details →</span>
+                  <button
+                    onClick={() => navigate(detailRoutes[activeFeature])}
+                    style={{ background: '#dc2626', color: '#fff', padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: '600', border: 'none', cursor: 'pointer' }}>
+                    View Details →
+                  </button>
                 </div>
               </div>
               <div style={{ background: 'rgba(255,255,255,.07)', borderRadius: '12px', padding: '20px' }}>
