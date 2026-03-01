@@ -44,4 +44,9 @@ export const adminAPI = {
   getUsers: () => API.get('/admin/users'),
 }
 
+export const loyaltyAPI = {
+  getDashboard: () => API.get('/loyalty/dashboard'),
+  redeemReward: (rewardName) => API.post('/loyalty/redeem', { rewardName }),
+}
+
 export default API

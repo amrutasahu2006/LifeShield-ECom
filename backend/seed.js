@@ -60,7 +60,7 @@ const products = [
     name: '72-Hour Emergency Survival Kit (4 Person)',
     description: 'Complete 72-hour survival kit for a family of 4. Includes 4-day food rations, 4 liters of water, hand-crank radio, flashlight, emergency blankets, dust masks, work gloves, and first aid kit.',
     price: 149.99, category: 'Disaster Preparedness Kits', stock: 30,
-    image: 'https://images.unsplash.com/photo-1624704577884-7a52fd8a89db?w=400',
+    image: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&w=800&q=80',
     featured: true, rating: 4.9, numReviews: 267, brand: 'ReadyNow', sku: 'DPK-001'
   },
   {
@@ -102,7 +102,7 @@ const products = [
     name: 'GPS Personal Emergency Locator Beacon',
     description: 'Satellite GPS emergency locator beacon for hikers, boaters, and adventurers. Sends distress signal to rescue services with your exact GPS coordinates. No subscription required.',
     price: 299.99, category: 'Personal Safety Devices', stock: 20,
-    image: 'https://images.unsplash.com/photo-1516707421ied3?w=400',
+    image: 'https://images.unsplash.com/photo-1529078155058-5d716f45d604?auto=format&fit=crop&w=800&q=80',
     featured: true, rating: 4.8, numReviews: 89, brand: 'BeaconSafe', sku: 'PSD-003'
   },
   {
@@ -133,7 +133,17 @@ const seedDB = async () => {
       name: 'Admin User',
       email: 'admin@lifeshield.com',
       password: 'admin123',
-      role: 'admin'
+      role: 'admin',
+      loyaltyPoints: 980,
+      loyaltyActivity: [
+        {
+          type: 'bonus',
+          title: 'Admin Welcome Bonus',
+          description: 'Initial loyalty credit for admin testing',
+          points: 980,
+          reference: 'seed'
+        }
+      ]
     });
 
     // Create test user
@@ -141,7 +151,45 @@ const seedDB = async () => {
       name: 'John Doe',
       email: 'john@example.com',
       password: 'password123',
-      role: 'user'
+      role: 'user',
+      loyaltyPoints: 2340,
+      loyaltyActivity: [
+        {
+          type: 'earn',
+          title: 'Purchase – 72-Hour Emergency Kit',
+          description: 'Order #A3F2B9',
+          points: 149,
+          reference: 'A3F2B9'
+        },
+        {
+          type: 'earn',
+          title: 'Purchase – First Aid Kit (326-Piece)',
+          description: 'Order #A1D8F5',
+          points: 49,
+          reference: 'A1D8F5'
+        },
+        {
+          type: 'redeem',
+          title: 'Redeemed – $5 Off Coupon',
+          description: 'Redeemed 500 points',
+          points: -500,
+          reference: 'Rewards Store'
+        },
+        {
+          type: 'bonus',
+          title: 'Birthday Bonus',
+          description: 'Annual Gift',
+          points: 50,
+          reference: 'Birthday'
+        },
+        {
+          type: 'earn',
+          title: 'Purchase – Smoke & CO Detector',
+          description: 'Order #A9C1E4',
+          points: 54,
+          reference: 'A9C1E4'
+        }
+      ]
     });
 
     console.log('Created admin (admin@lifeshield.com / admin123) and test user (john@example.com / password123)');

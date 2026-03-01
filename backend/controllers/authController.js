@@ -20,6 +20,7 @@ exports.register = async (req, res) => {
     const user = await User.create({ name, email, password });
     res.status(201).json({
       _id: user._id, name: user.name, email: user.email, role: user.role,
+      loyaltyPoints: user.loyaltyPoints || 0,
       token: generateToken(user._id)
     });
   } catch (err) {
@@ -39,6 +40,7 @@ exports.login = async (req, res) => {
     }
     res.json({
       _id: user._id, name: user.name, email: user.email, role: user.role,
+      loyaltyPoints: user.loyaltyPoints || 0,
       token: generateToken(user._id)
     });
   } catch (err) {
@@ -57,7 +59,7 @@ exports.updateProfile = async (req, res) => {
     user.address = req.body.address || user.address;
     if (req.body.password) user.password = req.body.password;
     const updated = await user.save();
-    res.json({ _id: updated._id, name: updated.name, email: updated.email, role: updated.role, token: generateToken(updated._id) });
+    res.json({ _id: updated._id, name: updated.name, email: updated.email, role: updated.role, loyaltyPoints: updated.loyaltyPoints || 0, token: generateToken(updated._id) });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

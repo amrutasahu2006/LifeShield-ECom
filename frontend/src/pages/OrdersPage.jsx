@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { orderAPI } from '../utils/api'
 
-const statusColors = { pending: '#f59e0b', processing: '#3b82f6', shipped: '#8b5cf6', delivered: '#16a34a', cancelled: '#dc2626' }
+const statusColors = { pending: '#f59e0b', confirmed: '#2563eb', processing: '#3b82f6', shipped: '#8b5cf6', delivered: '#16a34a', cancelled: '#dc2626' }
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState([])

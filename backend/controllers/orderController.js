@@ -1,6 +1,7 @@
 const Order = require('../models/Order');
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
+const User = require('../models/User');
 
 exports.createOrder = async (req, res) => {
   const { shippingAddress, paymentMethod } = req.body;
@@ -33,8 +34,28 @@ exports.createOrder = async (req, res) => {
       totalPrice,
       isPaid: true,
       paidAt: new Date(),
-      status: 'processing'
+      status: 'confirmed'
     });
+
+    const earnedPoints = Math.floor(itemsPrice);
+    if (earnedPoints > 0) {
+      await User.findByIdAndUpdate(req.user._id, {
+        $inc: { loyaltyPoints: earnedPoints },
+        $push: {
+          loyaltyActivity: {
+            $each: [{
+              type: 'earn',
+              title: `Purchase – Order #${order._id.toString().slice(-8).toUpperCase()}`,
+              description: `${orderItems.length} item(s) purchased`,
+              points: earnedPoints,
+              reference: order._id.toString(),
+              createdAt: new Date()
+            }],
+            $position: 0
+          }
+        }
+      });
+    }
 
     // Update stock
     for (const item of cart.items) {

@@ -1,4 +1,7 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import { loyaltyAPI } from '../utils/api'
 
 const tiers = [
   { name: 'Bronze', icon: '🥉', color: '#cd7f32', bg: '#cd7f3215', range: '0 – 499 Points', pct: '1%', label: 'Points per $1', perks: ['Birthday bonus points (50 pts)', 'Member-only email alerts', 'Early access to sales', 'Free shipping over $75'], goal: 'Onboard & Activate' },
@@ -16,16 +19,75 @@ const activity = [
 ]
 
 const rewards = [
-  { icon: '💰', name: '$5 Off Coupon', pts: '500 pts' },
-  { icon: '🚚', name: 'Free Expedited Shipping', pts: '300 pts' },
-  { icon: '🩺', name: 'Travel First Aid Kit (Free)', pts: '2,500 pts' },
-  { icon: '📋', name: 'Home Safety Checklist PDF', pts: '100 pts' },
-  { icon: '🎓', name: 'CPR Basics Online Course', pts: '1,000 pts' },
-  { icon: '💎', name: 'Upgrade to Platinum (1 mo)', pts: '4,000 pts' },
+  { icon: '💰', name: '$5 Off Coupon', points: 500 },
+  { icon: '🚚', name: 'Free Expedited Shipping', points: 300 },
+  { icon: '🩺', name: 'Travel First Aid Kit (Free)', points: 2500 },
+  { icon: '📋', name: 'Home Safety Checklist PDF', points: 100 },
+  { icon: '🎓', name: 'CPR Basics Online Course', points: 1000 },
+  { icon: '💎', name: 'Upgrade to Platinum (1 mo)', points: 4000 },
 ]
 
 export default function CRMLoyaltyPage() {
+  const { user } = useAuth()
+  const rewardsSectionRef = useRef(null)
+  const [dashboard, setDashboard] = useState(null)
+  const [loading, setLoading] = useState(true)
   const [redeeming, setRedeeming] = useState(null)
+  const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
+
+  const loadDashboard = async () => {
+    if (!user) {
+      setLoading(false)
+      return
+    }
+
+    try {
+      setError('')
+      const { data } = await loyaltyAPI.getDashboard()
+      setDashboard(data)
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to load loyalty dashboard')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadDashboard()
+  }, [user])
+
+  const handleRedeem = async (reward) => {
+    if (!user) return
+    try {
+      setRedeeming(reward.name)
+      setError('')
+      setMessage('')
+      const { data } = await loyaltyAPI.redeemReward(reward.name)
+      setMessage(data.message)
+      await loadDashboard()
+    } catch (err) {
+      setError(err.response?.data?.message || 'Redeem failed')
+    } finally {
+      setRedeeming(null)
+    }
+  }
+
+  const points = dashboard?.points || 0
+  const tier = dashboard?.tier || 'Bronze'
+  const pointsToNextTier = dashboard?.pointsToNextTier || 0
+  const progress = Math.min((points / 5000) * 100, 100)
+  const activityData = user ? (dashboard?.activity || []) : activity
+  const redeemedPoints = (dashboard?.activity || []).filter(a => a.type === 'redeem').reduce((sum, a) => sum + Math.abs(a.points), 0)
+  const earnedEvents = (dashboard?.activity || []).filter(a => a.type === 'earn').length
+  const memberSince = dashboard?.memberSince ? new Date(dashboard.memberSince) : null
+  const activeMonths = memberSince ? Math.max(1, Math.floor((Date.now() - memberSince.getTime()) / (1000 * 60 * 60 * 24 * 30))) : 1
+
+  const activityMeta = (entry) => {
+    if (entry.type === 'redeem') return { icon: '🎁', bg: '#fee2e2', earn: false }
+    if (entry.type === 'bonus') return { icon: '🎂', bg: '#dbeafe', earn: true }
+    return { icon: '🛒', bg: '#dcfce7', earn: true }
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
@@ -83,28 +145,38 @@ export default function CRMLoyaltyPage() {
         {/* Dashboard */}
         <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '24px', paddingBottom: '12px', borderBottom: '2px solid #e2e8f0' }}>My ShieldPoints Dashboard</h2>
         <div style={{ background: '#fff', borderRadius: '20px', padding: '32px', boxShadow: '0 4px 20px rgba(0,0,0,.08)', marginBottom: '40px' }}>
+          {!user && (
+            <div style={{ background: '#dbeafe', border: '1px solid #bfdbfe', borderRadius: '12px', padding: '14px 16px', marginBottom: '18px', fontSize: '13px', color: '#1e40af' }}>
+              Login required for live points and redemption actions. <Link to="/login" style={{ color: '#1d4ed8', fontWeight: '700', textDecoration: 'none' }}>Go to Login →</Link>
+            </div>
+          )}
+
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
             <div>
               <div style={{ fontSize: '13px', color: '#64748b' }}>Welcome back,</div>
               <div style={{ fontSize: '22px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                John Doe
-                <span style={{ background: '#f59e0b20', color: '#f59e0b', padding: '4px 12px', borderRadius: '20px', fontSize: '13px' }}>🥇 Gold Member</span>
+                {dashboard?.userName || user?.name || 'Guest User'}
+                <span style={{ background: tier === 'Platinum' ? '#7c3aed20' : tier === 'Gold' ? '#f59e0b20' : tier === 'Silver' ? '#9ca3af20' : '#cd7f3215', color: tier === 'Platinum' ? '#7c3aed' : tier === 'Gold' ? '#f59e0b' : tier === 'Silver' ? '#6b7280' : '#cd7f32', padding: '4px 12px', borderRadius: '20px', fontSize: '13px' }}>
+                  {tier === 'Platinum' ? '💎' : tier === 'Gold' ? '🥇' : tier === 'Silver' ? '🥈' : '🥉'} {tier} Member
+                </span>
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '40px', fontWeight: '800', color: '#dc2626' }}>2,340 pts</div>
+              <div style={{ fontSize: '40px', fontWeight: '800', color: '#dc2626' }}>{loading ? '...' : `${points.toLocaleString()} pts`}</div>
               <div style={{ fontSize: '12px', color: '#64748b' }}>Total balance</div>
             </div>
           </div>
-          <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '6px' }}>Progress to Platinum: 2,340 / 5,000 points</div>
+          {error && <div style={{ marginBottom: '12px', color: '#dc2626', fontSize: '13px', fontWeight: '600' }}>❌ {error}</div>}
+          {message && <div style={{ marginBottom: '12px', color: '#16a34a', fontSize: '13px', fontWeight: '600' }}>✅ {message}</div>}
+          <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '6px' }}>Progress to Platinum: {points.toLocaleString()} / 5,000 points</div>
           <div style={{ background: '#f1f5f9', borderRadius: '12px', height: '16px', marginBottom: '8px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', borderRadius: '12px', background: 'linear-gradient(90deg,#dc2626,#f97316)', width: '46.8%' }} />
+            <div style={{ height: '100%', borderRadius: '12px', background: 'linear-gradient(90deg,#dc2626,#f97316)', width: `${progress}%` }} />
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#64748b', marginBottom: '28px' }}>
-            <span>Gold (1,500)</span><span>2,660 pts to Platinum 💎</span><span>Platinum (5,000)</span>
+            <span>Gold (1,500)</span><span>{tier === 'Platinum' ? 'Highest tier unlocked 💎' : `${pointsToNextTier.toLocaleString()} pts to next tier`}</span><span>Platinum (5,000)</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(130px,1fr))', gap: '16px', marginBottom: '24px' }}>
-            {[['2,340','Available Points'],['8','Orders Placed'],['$842','Total Spent'],['$47','Saved via Points'],['14','Months Active']].map(([v,l]) => (
+            {[[points.toLocaleString(),'Available Points'],[`${earnedEvents}`,'Point-Earning Events'],[`$${dashboard?.pointsValue || '0.00'}`,'Point Value'],[`$${(redeemedPoints / 100).toFixed(2)}`,'Saved via Points'],[`${activeMonths}`,'Months Active']].map(([v,l]) => (
               <div key={l} style={{ background: '#f8fafc', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
                 <div style={{ fontSize: '26px', fontWeight: '800', color: '#dc2626' }}>{v}</div>
                 <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>{l}</div>
@@ -112,7 +184,11 @@ export default function CRMLoyaltyPage() {
             ))}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-            <button style={{ background: '#dc2626', color: '#fff', padding: '12px 28px', borderRadius: '10px', fontWeight: '700', fontSize: '14px', border: 'none', cursor: 'pointer' }}>Redeem Points →</button>
+            <button
+              onClick={() => rewardsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              style={{ background: '#dc2626', color: '#fff', padding: '12px 28px', borderRadius: '10px', fontWeight: '700', fontSize: '14px', border: 'none', cursor: 'pointer' }}>
+              Redeem Points →
+            </button>
             <span style={{ fontSize: '12px', color: '#64748b' }}>100 points = $1 discount</span>
           </div>
         </div>
@@ -124,31 +200,38 @@ export default function CRMLoyaltyPage() {
             <h3 style={{ fontSize: '18px', fontWeight: '700' }}>Recent Activity</h3>
             <span style={{ fontSize: '13px', color: '#dc2626', cursor: 'pointer', fontWeight: '600' }}>View All →</span>
           </div>
-          {activity.map((a, i) => (
-            <div key={i} style={{ display: 'flex', gap: '16px', padding: '14px 0', borderBottom: i < activity.length - 1 ? '1px solid #f1f5f9' : 'none', alignItems: 'center' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: a.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>{a.icon}</div>
+          {activityData.map((a, i) => {
+            const meta = a.type ? activityMeta(a) : { icon: a.icon, bg: a.bg, earn: a.earn }
+            const pointLabel = typeof a.points === 'number' ? `${a.points > 0 ? '+' : ''}${a.points} pts` : a.pts
+            const dateLabel = a.createdAt ? new Date(a.createdAt).toLocaleString() : a.date
+
+            return (
+            <div key={i} style={{ display: 'flex', gap: '16px', padding: '14px 0', borderBottom: i < activityData.length - 1 ? '1px solid #f1f5f9' : 'none', alignItems: 'center' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: meta.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>{meta.icon}</div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: '600', fontSize: '14px' }}>{a.title}</div>
-                <div style={{ fontSize: '12px', color: '#64748b' }}>{a.date}</div>
+                <div style={{ fontSize: '12px', color: '#64748b' }}>{a.description || dateLabel}</div>
               </div>
-              <div style={{ fontWeight: '700', fontSize: '14px', color: a.earn ? '#16a34a' : '#dc2626' }}>{a.pts}</div>
+              <div style={{ fontWeight: '700', fontSize: '14px', color: meta.earn ? '#16a34a' : '#dc2626' }}>{pointLabel}</div>
             </div>
-          ))}
+            )
+          })}
         </div>
 
         {/* Rewards Store */}
-        <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '24px', paddingBottom: '12px', borderBottom: '2px solid #e2e8f0' }}>Rewards Store</h2>
+        <h2 ref={rewardsSectionRef} style={{ fontSize: '24px', fontWeight: '800', marginBottom: '24px', paddingBottom: '12px', borderBottom: '2px solid #e2e8f0' }}>Rewards Store</h2>
         <div style={{ background: '#fff', borderRadius: '20px', padding: '28px', boxShadow: '0 4px 20px rgba(0,0,0,.08)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: '20px' }}>
             {rewards.map(r => (
               <div key={r.name} style={{ border: '1px solid #e2e8f0', borderRadius: '14px', padding: '20px', textAlign: 'center' }}>
                 <div style={{ fontSize: '40px', marginBottom: '12px' }}>{r.icon}</div>
                 <h4 style={{ fontSize: '13px', fontWeight: '700', marginBottom: '8px' }}>{r.name}</h4>
-                <div style={{ color: '#dc2626', fontWeight: '800', fontSize: '16px', marginBottom: '12px' }}>{r.pts}</div>
+                <div style={{ color: '#dc2626', fontWeight: '800', fontSize: '16px', marginBottom: '12px' }}>{r.points.toLocaleString()} pts</div>
                 <button
-                  onClick={() => setRedeeming(r.name)}
-                  style={{ background: redeeming === r.name ? '#16a34a' : '#1e293b', color: '#fff', padding: '8px 20px', borderRadius: '8px', fontSize: '12px', fontWeight: '600', border: 'none', cursor: 'pointer' }}>
-                  {redeeming === r.name ? '✓ Redeemed!' : 'Redeem'}
+                  onClick={() => handleRedeem(r)}
+                  disabled={!user || loading || redeeming === r.name || points < r.points}
+                  style={{ background: redeeming === r.name ? '#16a34a' : points >= r.points ? '#1e293b' : '#94a3b8', color: '#fff', padding: '8px 20px', borderRadius: '8px', fontSize: '12px', fontWeight: '600', border: 'none', cursor: !user || loading || points < r.points ? 'not-allowed' : 'pointer' }}>
+                  {redeeming === r.name ? 'Redeeming...' : !user ? 'Login to Redeem' : points >= r.points ? 'Redeem' : 'Not enough points'}
                 </button>
               </div>
             ))}

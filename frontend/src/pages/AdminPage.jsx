@@ -119,7 +119,7 @@ export default function AdminPage() {
                         await adminAPI.updateOrderStatus(o._id, e.target.value)
                         setOrders(orders.map(ord => ord._id === o._id ? { ...ord, status: e.target.value } : ord))
                       }} style={{ padding: '4px 8px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}>
-                        {['pending', 'processing', 'shipped', 'delivered', 'cancelled'].map(s => <option key={s} value={s}>{s}</option>)}
+                        {['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'].map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
                     </td>
                     <td style={{ padding: '14px 16px', color: '#64748b' }}>{new Date(o.createdAt).toLocaleDateString()}</td>

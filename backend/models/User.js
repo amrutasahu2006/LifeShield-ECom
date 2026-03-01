@@ -6,6 +6,17 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: [true, 'Email is required'], unique: true, lowercase: true },
   password: { type: String, required: [true, 'Password is required'], minlength: 6 },
   role: { type: String, enum: ['user', 'admin'], default: 'user' },
+  loyaltyPoints: { type: Number, default: 0, min: 0 },
+  loyaltyActivity: [
+    {
+      type: { type: String, enum: ['earn', 'redeem', 'bonus'], default: 'earn' },
+      title: { type: String, required: true },
+      description: { type: String, default: '' },
+      points: { type: Number, required: true },
+      reference: { type: String, default: '' },
+      createdAt: { type: Date, default: Date.now }
+    }
+  ],
   address: {
     street: String,
     city: String,
