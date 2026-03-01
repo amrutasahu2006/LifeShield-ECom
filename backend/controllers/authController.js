@@ -57,9 +57,10 @@ exports.updateProfile = async (req, res) => {
     const user = await User.findById(req.user._id);
     user.name = req.body.name || user.name;
     user.address = req.body.address || user.address;
+    user.safetyProfile = req.body.safetyProfile || user.safetyProfile;
     if (req.body.password) user.password = req.body.password;
     const updated = await user.save();
-    res.json({ _id: updated._id, name: updated.name, email: updated.email, role: updated.role, loyaltyPoints: updated.loyaltyPoints || 0, token: generateToken(updated._id) });
+    res.json({ _id: updated._id, name: updated.name, email: updated.email, role: updated.role, loyaltyPoints: updated.loyaltyPoints || 0, safetyProfile: updated.safetyProfile, token: generateToken(updated._id) });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

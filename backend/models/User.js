@@ -17,6 +17,20 @@ const userSchema = new mongoose.Schema({
       createdAt: { type: Date, default: Date.now }
     }
   ],
+  safetyProfile: {
+    region: { type: String, default: 'California (High Wildfire + Earthquake Risk)' },
+    householdSize: { type: String, default: 'Family of 4' },
+    homeType: { type: String, default: 'Single-Family Home' },
+    needs: { type: [String], default: [] },
+    risks: { type: [String], default: [] },
+    alertPreferences: {
+      wildfire: { type: Boolean, default: true },
+      flooding: { type: Boolean, default: true },
+      expiry: { type: Boolean, default: true },
+      webinars: { type: Boolean, default: false },
+      sales: { type: Boolean, default: true }
+    }
+  },
   address: {
     street: String,
     city: String,
