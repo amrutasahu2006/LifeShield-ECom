@@ -1,8 +1,9 @@
 import React from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
 import Navbar from './components/Navbar'
+import AdminNavbar from './components/AdminNavbar'
 import Footer from './components/Footer'
 import HomePage from './pages/HomePage'
 import ProductsPage from './pages/ProductsPage'
@@ -20,8 +21,16 @@ import SCMDemandPage from './pages/SCMDemandPage'
 import UniquenessPage from './pages/UniquenessPage'
 
 const ProtectedRoute = ({ children }) => {
-  const { user } = useAuth()
-  return user ? children : <Navigate to="/login" replace />
+  const { user, isAdmin } = useAuth()
+  if (!user) return <Navigate to="/login" replace />
+  if (isAdmin) return <Navigate to="/admin" replace />
+  return children
+}
+
+const UserRoute = ({ children }) => {
+  const { isAdmin } = useAuth()
+  if (isAdmin) return <Navigate to="/admin" replace />
+  return children
 }
 
 const AdminRoute = ({ children }) => {
@@ -32,32 +41,35 @@ const AdminRoute = ({ children }) => {
 }
 
 function AppContent() {
+  const location = useLocation()
+  const isAdminRoute = location.pathname.startsWith('/admin')
+
   return (
-    <Router>
-      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        <Navbar />
-        <main style={{ flex: 1 }}>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/products" element={<ProductsPage />} />
-            <Route path="/products/:id" element={<ProductDetailPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/cart" element={<CartPage />} />
-            <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
-            <Route path="/order-success" element={<ProtectedRoute><OrderSuccessPage /></ProtectedRoute>} />
-            <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
-            <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
-            <Route path="/loyalty" element={<CRMLoyaltyPage />} />
-            <Route path="/safety-profile" element={<CRMPersonalizationPage />} />
-            <Route path="/scm-dashboard" element={<SCMDemandPage />} />
-            <Route path="/why-us" element={<UniquenessPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </main>
-        <Footer />
-      </div>
-    </Router>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      {isAdminRoute ? <AdminNavbar /> : <Navbar />}
+      <main style={{ flex: 1 }}>
+        <Routes>
+          <Route path="/" element={<UserRoute><HomePage /></UserRoute>} />
+          <Route path="/products" element={<UserRoute><ProductsPage /></UserRoute>} />
+          <Route path="/products/:id" element={<UserRoute><ProductDetailPage /></UserRoute>} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/cart" element={<UserRoute><CartPage /></UserRoute>} />
+          <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
+          <Route path="/order-success" element={<ProtectedRoute><OrderSuccessPage /></ProtectedRoute>} />
+          <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
+          <Route path="/admin" element={<AdminRoute><AdminPage activeTab="dashboard" /></AdminRoute>} />
+          <Route path="/admin/products" element={<AdminRoute><AdminPage activeTab="products" /></AdminRoute>} />
+          <Route path="/admin/orders" element={<AdminRoute><AdminPage activeTab="orders" /></AdminRoute>} />
+          <Route path="/loyalty" element={<UserRoute><CRMLoyaltyPage /></UserRoute>} />
+          <Route path="/safety-profile" element={<UserRoute><CRMPersonalizationPage /></UserRoute>} />
+          <Route path="/scm-dashboard" element={<UserRoute><SCMDemandPage /></UserRoute>} />
+          <Route path="/why-us" element={<UserRoute><UniquenessPage /></UserRoute>} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+      <Footer />
+    </div>
   )
 }
 
@@ -65,8 +77,11 @@ export default function App() {
   return (
     <AuthProvider>
       <CartProvider>
-        <AppContent />
+        <Router>
+          <AppContent />
+        </Router>
       </CartProvider>
     </AuthProvider>
   )
 }
+

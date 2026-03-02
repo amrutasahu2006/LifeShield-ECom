@@ -16,7 +16,15 @@ export default function LoginPage() {
     e.preventDefault(); setError(''); setLoading(true)
     try {
       const { data } = await authAPI.login(form)
-      login(data); await fetchCart(); navigate('/')
+      login(data)
+      await fetchCart()
+
+      // Redirect based on role
+      if (data.role === 'admin') {
+        navigate('/admin')
+      } else {
+        navigate('/')
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please try again.')
     } finally { setLoading(false) }
