@@ -11,6 +11,7 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState({ fullName: '', street: '', city: '', state: '', zip: '', country: 'India' })
   const [card, setCard] = useState({ number: '', expiry: '', cvv: '', name: '' })
   const [errors, setErrors] = useState({})
+  const [orderError, setOrderError] = useState('')
 
   const shipping = cart.totalAmount > 100 ? 0 : 9.99
   const tax = parseFloat((cart.totalAmount * 0.1).toFixed(2))
@@ -29,11 +30,12 @@ export default function CheckoutPage() {
 
   const handlePlaceOrder = async () => {
     setLoading(true)
+    setOrderError('')
     try {
       const { data } = await orderAPI.create({ shippingAddress: address, paymentMethod: 'Card (Demo)' })
       navigate('/order-success', { state: { orderId: data._id, total: data.totalPrice } })
     } catch (err) {
-      alert(err.response?.data?.message || 'Order failed. Please try again.')
+      setOrderError(err.response?.data?.message || 'Order failed. Please try again.')
     } finally { setLoading(false) }
   }
 
@@ -104,6 +106,11 @@ export default function CheckoutPage() {
             {step === 3 && (
               <>
                 <h2 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '24px' }}>✅ Review Order</h2>
+                {orderError && (
+                  <div style={{ marginBottom: '16px', padding: '12px 14px', borderRadius: '10px', background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: '14px', fontWeight: '600' }}>
+                    {orderError}
+                  </div>
+                )}
                 <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '20px', marginBottom: '20px' }}>
                   <h3 style={{ fontSize: '13px', fontWeight: '700', marginBottom: '10px', color: '#64748b', textTransform: 'uppercase' }}>Shipping To</h3>
                   <p style={{ fontSize: '15px', lineHeight: '1.6' }}>{address.fullName}<br />{address.street}, {address.city}<br />{address.state} {address.zip}, {address.country}</p>

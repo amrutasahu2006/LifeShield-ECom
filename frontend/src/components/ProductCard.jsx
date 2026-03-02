@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
@@ -14,13 +14,24 @@ export default function ProductCard({ product }) {
   const { addToCart, loading } = useCart()
   const { user } = useAuth()
   const navigate = useNavigate()
+  const [adding, setAdding] = useState(false)
+  const [added, setAdded] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
 
   const handleAddToCart = async (e) => {
     e.preventDefault()
     if (!user) { navigate('/login'); return }
+    setAdding(true)
+    setErrorMsg('')
     const result = await addToCart(product._id, 1)
-    if (!result.success) alert(result.message)
-    else alert('✅ Added to cart!')
+    if (!result.success) {
+      setErrorMsg(result.message)
+      setAdding(false)
+      return
+    }
+    setAdded(true)
+    setAdding(false)
+    setTimeout(() => setAdded(false), 1500)
   }
 
   const color = categoryColors[product.category] || '#dc2626'
@@ -62,11 +73,12 @@ export default function ProductCard({ product }) {
       <div style={{ padding: '0 16px 16px' }}>
         <button
           onClick={handleAddToCart}
-          disabled={loading || product.stock === 0}
+          disabled={loading || adding || product.stock === 0}
           style={{ width: '100%', padding: '10px', background: product.stock === 0 ? '#94a3b8' : '#dc2626', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: '600', cursor: product.stock === 0 ? 'not-allowed' : 'pointer', transition: 'opacity 0.2s' }}
         >
-          {product.stock === 0 ? 'Out of Stock' : '🛒 Add to Cart'}
+          {product.stock === 0 ? 'Out of Stock' : adding ? 'Adding...' : added ? '✅ Added' : '🛒 Add to Cart'}
         </button>
+        {errorMsg && <div style={{ marginTop: '8px', fontSize: '12px', color: '#dc2626' }}>{errorMsg}</div>}
       </div>
     </div>
   )

@@ -8,6 +8,21 @@ API.interceptors.request.use((config) => {
   return config
 })
 
+API.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error?.response?.status
+    const message = (error?.response?.data?.message || '').toLowerCase()
+    if (status === 401 && (message.includes('token') || message.includes('authorized'))) {
+      localStorage.removeItem('lifeshieldUser')
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        window.location.href = '/login'
+      }
+    }
+    return Promise.reject(error)
+  }
+)
+
 export const authAPI = {
   register: (data) => API.post('/auth/register', data),
   login: (data) => API.post('/auth/login', data),
@@ -42,6 +57,8 @@ export const adminAPI = {
   getAllOrders: () => API.get('/admin/orders'),
   updateOrderStatus: (id, status) => API.put(`/admin/orders/${id}/status`, { status }),
   getUsers: () => API.get('/admin/users'),
+  getAlerts: () => API.get('/admin/alerts'),
+  markAlertRead: (id) => API.put(`/admin/alerts/${id}/read`),
 }
 
 export const loyaltyAPI = {

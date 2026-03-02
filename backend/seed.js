@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const bcrypt = require('bcryptjs');
-dotenv.config();
+dotenv.config({ override: true });
 
 const User = require('./models/User');
 const Product = require('./models/Product');

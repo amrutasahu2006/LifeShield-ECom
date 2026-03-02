@@ -2,12 +2,24 @@ const Order = require('../models/Order');
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
 const User = require('../models/User');
+const InventoryAlert = require('../models/InventoryAlert');
+
+const LOW_STOCK_THRESHOLD = Number(process.env.LOW_STOCK_THRESHOLD || 20);
 
 exports.createOrder = async (req, res) => {
   const { shippingAddress, paymentMethod } = req.body;
   try {
     const cart = await Cart.findOne({ user: req.user._id }).populate('items.product');
     if (!cart || cart.items.length === 0) return res.status(400).json({ message: 'Cart is empty' });
+
+    // Validate stock for all items before proceeding
+    for (const item of cart.items) {
+      if (item.product.stock < item.quantity) {
+        return res.status(400).json({ 
+          message: `Insufficient stock for ${item.product.name}. Available: ${item.product.stock}, Requested: ${item.quantity}.` 
+        });
+      }
+    }
 
     const orderItems = cart.items.map(item => ({
       product: item.product._id,
@@ -59,7 +71,27 @@ exports.createOrder = async (req, res) => {
 
     // Update stock
     for (const item of cart.items) {
-      await Product.findByIdAndUpdate(item.product._id, { $inc: { stock: -item.quantity } });
+      const previousStock = item.product.stock;
+      const updatedProduct = await Product.findByIdAndUpdate(
+        item.product._id,
+        { $inc: { stock: -item.quantity } },
+        { new: true }
+      );
+
+      const crossedLowStockThreshold =
+        updatedProduct &&
+        previousStock > LOW_STOCK_THRESHOLD &&
+        updatedProduct.stock <= LOW_STOCK_THRESHOLD;
+
+      if (crossedLowStockThreshold) {
+        await InventoryAlert.create({
+          type: 'low_stock',
+          product: updatedProduct._id,
+          message: `${updatedProduct.name} stock dropped to ${updatedProduct.stock}. Restock recommended.`,
+          threshold: LOW_STOCK_THRESHOLD,
+          currentStock: updatedProduct.stock
+        });
+      }
     }
 
     // Clear cart

@@ -11,16 +11,19 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
   const navigate = useNavigate()
   const [products, setProducts] = useState([])
   const [orders, setOrders] = useState([])
+  const [alerts, setAlerts] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [editId, setEditId] = useState(null)
   const [msg, setMsg] = useState({ text: '', type: '' })
   const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
 
   const loadProducts = () => productAPI.getAll({ limit: 100 }).then(r => setProducts(r.data.products))
   const loadOrders = () => adminAPI.getAllOrders().then(r => setOrders(r.data))
+  const loadAlerts = () => adminAPI.getAlerts().then(r => setAlerts(r.data)).catch(() => setAlerts([]))
 
-  useEffect(() => { loadProducts(); loadOrders() }, [])
+  useEffect(() => { loadProducts(); loadOrders(); loadAlerts() }, [])
 
   const showMessage = (text, type = 'success') => {
     setMsg({ text, type })
@@ -49,7 +52,11 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
   }
 
   const filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
-  const filteredOrders = orders.filter(o => o._id.toLowerCase().includes(searchQuery.toLowerCase()) || (o.user?.name || '').toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredOrders = orders.filter(o => {
+    const matchesSearch = o._id.toLowerCase().includes(searchQuery.toLowerCase()) || (o.user?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesStatus = statusFilter === 'all' || o.status.toLowerCase() === statusFilter.toLowerCase()
+    return matchesSearch && matchesStatus
+  })
 
   const getOrderStatusColor = (status) => {
     switch (status.toLowerCase()) {
@@ -65,6 +72,7 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
   const totalRevenue = orders.filter(o => o.isPaid).reduce((sum, order) => sum + order.totalPrice, 0)
   const lowStockProducts = products.filter(p => p.stock > 0 && p.stock <= 20)
   const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'processing')
+  const unreadAlerts = alerts.filter(a => !a.isRead)
 
   const getStockStatus = (stock) => {
     if (stock > 20) return { label: 'In Stock', color: '#10b981', bg: '#d1fae5' }
@@ -186,6 +194,23 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
               </div>
             )}
 
+            {activeTab === 'orders' && (
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="form-input"
+                style={{ width: 'auto', padding: '0.625rem 2.5rem 0.625rem 1rem', borderRadius: '9999px', cursor: 'pointer', fontWeight: '500' }}
+              >
+                <option value="all">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="processing">Processing</option>
+                <option value="shipped">Shipped</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            )}
+
             {activeTab === 'products' && (
               <button
                 onClick={() => { setForm(emptyForm); setEditId(null); setShowForm(true) }}
@@ -266,22 +291,38 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
 
                   <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
                     <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0 }}>Quick Actions</h3>
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0 }}>Low Stock Alerts</h3>
                     </div>
-                    <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                      <button onClick={() => { setForm(emptyForm); setEditId(null); setShowForm(true) }} style={{ padding: '1rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer', transition: 'all 0.2s', textAlign: 'left', width: '100%' }} onMouseEnter={e => e.currentTarget.style.borderColor = '#4f46e5'} onMouseLeave={e => e.currentTarget.style.borderColor = '#e2e8f0'}>
-                        <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#e0e7ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiPlus size={20} /></div>
-                        <div>
-                          <div style={{ fontWeight: '600', color: '#1e293b' }}>Add New Product</div>
-                          <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Expand your active catalog inventory</div>
+                    <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      {unreadAlerts.length === 0 ? (
+                        <p style={{ color: '#64748b', margin: 0 }}>No unread inventory alerts.</p>
+                      ) : unreadAlerts.slice(0, 5).map(a => (
+                        <div key={a._id} style={{ padding: '0.875rem', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px' }}>
+                          <div style={{ fontWeight: '700', color: '#92400e', fontSize: '0.9rem' }}>
+                            {a.product?.name || 'Product'} low stock
+                          </div>
+                          <div style={{ fontSize: '0.8rem', color: '#78350f', marginTop: '4px' }}>
+                            Current stock: {typeof a.currentStock === 'number' ? a.currentStock : a.product?.stock} • Threshold: {a.threshold}
+                          </div>
+                          <div style={{ marginTop: '8px' }}>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await adminAPI.markAlertRead(a._id)
+                                  setAlerts(alerts.map(alert => alert._id === a._id ? { ...alert, isRead: true } : alert))
+                                } catch (err) {
+                                  showMessage('Failed to update alert', 'error')
+                                }
+                              }}
+                              style={{ background: 'transparent', border: 'none', color: '#92400e', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer', padding: 0 }}
+                            >
+                              Mark as read
+                            </button>
+                          </div>
                         </div>
-                      </button>
-                      <button onClick={() => navigate('/admin/products')} style={{ padding: '1rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer', transition: 'all 0.2s', textAlign: 'left', width: '100%' }} onMouseEnter={e => e.currentTarget.style.borderColor = '#4f46e5'} onMouseLeave={e => e.currentTarget.style.borderColor = '#e2e8f0'}>
-                        <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#f3e8ff', color: '#9333ea', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><FiClipboard size={20} /></div>
-                        <div>
-                          <div style={{ fontWeight: '600', color: '#1e293b' }}>Manage Inventory</div>
-                          <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Update stock and product details</div>
-                        </div>
+                      ))}
+                      <button onClick={() => navigate('/admin/products')} style={{ marginTop: '0.5rem', padding: '0.8rem 1rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', cursor: 'pointer', fontWeight: '600', color: '#334155' }}>
+                        Manage Inventory
                       </button>
                     </div>
                   </div>
