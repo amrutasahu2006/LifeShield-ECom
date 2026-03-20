@@ -36,6 +36,10 @@ export default function ProductCard({ product }) {
 
   const color = categoryColors[product.category] || '#dc2626'
   const formatINR = (value) => `Rs. ${Number(value).toFixed(2)}`
+  const stock = Number.isFinite(Number(product.stock)) ? Math.floor(Number(product.stock)) : 0
+  const lowStockThreshold = Number.isFinite(Number(product.lowStockThreshold)) ? Math.floor(Number(product.lowStockThreshold)) : 5
+  const isOutOfStock = stock <= 0
+  const isLowStock = !isOutOfStock && stock <= lowStockThreshold
 
   return (
     <div
@@ -52,10 +56,13 @@ export default function ProductCard({ product }) {
           {product.featured && (
             <span style={{ position: 'absolute', top: '12px', left: '12px', background: '#dc2626', color: '#fff', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700' }}>⭐ FEATURED</span>
           )}
-          {product.stock === 0 && (
+          {isOutOfStock && (
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ color: '#fff', fontWeight: '700', fontSize: '16px' }}>OUT OF STOCK</span>
             </div>
+          )}
+          {isLowStock && (
+            <span style={{ position: 'absolute', top: '12px', right: '12px', background: '#f59e0b', color: '#fff', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700' }}>LOW STOCK</span>
           )}
         </div>
         <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -64,8 +71,8 @@ export default function ProductCard({ product }) {
           <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '12px', lineHeight: '1.5', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{product.description}</p>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
             <span style={{ fontSize: '20px', fontWeight: '800', color: '#dc2626' }}>{formatINR(product.price)}</span>
-            <span style={{ fontSize: '12px', fontWeight: '600', color: product.stock > 10 ? '#16a34a' : product.stock > 0 ? '#d97706' : '#dc2626' }}>
-              {product.stock > 10 ? '✓ In Stock' : product.stock > 0 ? `Only ${product.stock} left` : '✗ Out of Stock'}
+            <span style={{ fontSize: '12px', fontWeight: '600', color: stock > 10 ? '#16a34a' : stock > 0 ? '#d97706' : '#dc2626' }}>
+              {stock > 10 ? '✓ In Stock' : stock > 0 ? `Only ${stock} left` : '✗ Out of Stock'}
             </span>
           </div>
           <div style={{ fontSize: '12px', color: '#94a3b8' }}>⭐ {product.rating} ({product.numReviews} reviews)</div>
@@ -74,10 +81,10 @@ export default function ProductCard({ product }) {
       <div style={{ padding: '0 16px 16px' }}>
         <button
           onClick={handleAddToCart}
-          disabled={loading || adding || product.stock === 0}
-          style={{ width: '100%', padding: '10px', background: product.stock === 0 ? '#94a3b8' : '#dc2626', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: '600', cursor: product.stock === 0 ? 'not-allowed' : 'pointer', transition: 'opacity 0.2s' }}
+          disabled={loading || adding || isOutOfStock}
+          style={{ width: '100%', padding: '10px', background: isOutOfStock ? '#94a3b8' : '#dc2626', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: '600', cursor: isOutOfStock ? 'not-allowed' : 'pointer', transition: 'opacity 0.2s' }}
         >
-          {product.stock === 0 ? 'Out of Stock' : adding ? 'Adding...' : added ? '✅ Added' : '🛒 Add to Cart'}
+          {isOutOfStock ? 'Out of Stock' : adding ? 'Adding...' : added ? '✅ Added' : '🛒 Add to Cart'}
         </button>
         {errorMsg && <div style={{ marginTop: '8px', fontSize: '12px', color: '#dc2626' }}>{errorMsg}</div>}
       </div>

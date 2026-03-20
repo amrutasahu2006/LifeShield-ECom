@@ -5,25 +5,59 @@ import { FiBox, FiShoppingCart, FiPlus, FiEdit2, FiTrash2, FiX, FiCheckCircle, F
 import { useNavigate } from 'react-router-dom'
 
 const CATS = ['First Aid Kits', 'Fire Safety Equipment', 'Disaster Preparedness Kits', 'Personal Safety Devices']
-const emptyForm = { name: '', description: '', price: '', category: CATS[0], stock: '', image: '', brand: '', sku: '', featured: false }
+const emptyForm = { name: '', description: '', price: '', category: CATS[0], stock: '', lowStockThreshold: '5', image: '', brand: '', sku: '', featured: false }
 
 export default function AdminPage({ activeTab = 'dashboard' }) {
   const navigate = useNavigate()
   const [products, setProducts] = useState([])
   const [orders, setOrders] = useState([])
+  const [dashboardStats, setDashboardStats] = useState({ totalOrders: 0, totalRevenue: 0, monthlyRevenue: [], topSellingProducts: [] })
+  const [statsLoading, setStatsLoading] = useState(true)
+  const [statsError, setStatsError] = useState('')
   const [alerts, setAlerts] = useState([])
+  const [lowStockProducts, setLowStockProducts] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [editId, setEditId] = useState(null)
   const [msg, setMsg] = useState({ text: '', type: '' })
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [dashboardRefreshing, setDashboardRefreshing] = useState(false)
 
   const loadProducts = () => productAPI.getAll({ limit: 100 }).then(r => setProducts(r.data.products))
   const loadOrders = () => adminAPI.getAllOrders().then(r => setOrders(r.data))
+  const loadStats = () => {
+    setStatsLoading(true)
+    setStatsError('')
+    return adminAPI.getStats()
+      .then((r) => setDashboardStats(r.data))
+      .catch((err) => {
+        setStatsError(err.response?.data?.message || 'Unable to load analytics data')
+        setDashboardStats({ totalOrders: 0, totalRevenue: 0, monthlyRevenue: [], topSellingProducts: [] })
+      })
+      .finally(() => setStatsLoading(false))
+  }
   const loadAlerts = () => adminAPI.getAlerts().then(r => setAlerts(r.data)).catch(() => setAlerts([]))
+  const loadLowStock = () => adminAPI.getLowStockProducts().then(r => setLowStockProducts(r.data)).catch(() => setLowStockProducts([]))
 
-  useEffect(() => { loadProducts(); loadOrders(); loadAlerts() }, [])
+  const refreshDashboardData = async () => {
+    setDashboardRefreshing(true)
+    try {
+      await Promise.all([loadOrders(), loadStats(), loadLowStock(), loadAlerts()])
+    } finally {
+      setDashboardRefreshing(false)
+    }
+  }
+
+  useEffect(() => { loadProducts(); loadOrders(); loadStats(); loadAlerts(); loadLowStock() }, [])
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      refreshDashboardData()
+    }, 15000)
+
+    return () => clearInterval(intervalId)
+  }, [])
 
   const showMessage = (text, type = 'success') => {
     setMsg({ text, type })
@@ -37,16 +71,17 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
       else await adminAPI.createProduct(form)
       showMessage(editId ? 'Product updated successfully!' : 'Product created successfully!')
       setShowForm(false); setForm(emptyForm); setEditId(null)
-      loadProducts()
+      loadProducts(); loadLowStock()
     } catch (err) { showMessage(err.response?.data?.message || 'Action failed', 'error') }
   }
 
-  const handleEdit = (p) => { setForm({ ...p, price: p.price.toString(), stock: p.stock.toString() }); setEditId(p._id); setShowForm(true) }
+  const handleEdit = (p) => { setForm({ ...p, price: p.price.toString(), stock: p.stock.toString(), lowStockThreshold: (p.lowStockThreshold ?? 5).toString() }); setEditId(p._id); setShowForm(true) }
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this product?')) return
     try {
       await adminAPI.deleteProduct(id)
       setProducts(products.filter(p => p._id !== id))
+      loadLowStock()
       showMessage('Product deleted successfully')
     } catch (err) { showMessage('Failed to delete product', 'error') }
   }
@@ -59,20 +94,24 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
   })
 
   const getOrderStatusColor = (status) => {
-    switch (status.toLowerCase()) {
+    switch ((status || '').toLowerCase()) {
       case 'delivered': return { bg: '#dcfce7', text: '#16a34a' }
-      case 'shipped': return { bg: '#dbeafe', text: '#2563eb' }
-      case 'processing': return { bg: '#fef3c7', text: '#d97706' }
-      case 'cancelled': return { bg: '#fee2e2', text: '#dc2626' }
+      case 'shipped': return { bg: '#ffedd5', text: '#ea580c' }
+      case 'processing': return { bg: '#dbeafe', text: '#2563eb' }
+      case 'pending': return { bg: '#f1f5f9', text: '#64748b' }
       default: return { bg: '#f1f5f9', text: '#475569' }
     }
   }
 
   // Dashboard Metrics Calculations
-  const totalRevenue = orders.filter(o => o.isPaid).reduce((sum, order) => sum + order.totalPrice, 0)
-  const lowStockProducts = products.filter(p => p.stock > 0 && p.stock <= 20)
+  const totalRevenue = Number(dashboardStats.totalRevenue || 0)
+  const totalOrders = Number(dashboardStats.totalOrders || 0)
   const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'processing')
   const unreadAlerts = alerts.filter(a => !a.isRead)
+  const monthlyRevenue = dashboardStats.monthlyRevenue || []
+  const topSellingProducts = dashboardStats.topSellingProducts || []
+  const chartMaxRevenue = Math.max(...monthlyRevenue.map((m) => Number(m.totalRevenue || 0)), 1)
+  const formatINR = (value) => `Rs. ${Number(value || 0).toFixed(2)}`
 
   const getStockStatus = (stock) => {
     if (stock > 20) return { label: 'In Stock', color: '#10b981', bg: '#d1fae5' }
@@ -181,6 +220,17 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
           </div>
 
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            {activeTab === 'dashboard' && (
+              <button
+                onClick={refreshDashboardData}
+                disabled={dashboardRefreshing}
+                className="form-input"
+                style={{ width: 'auto', padding: '0.625rem 1rem', borderRadius: '9999px', cursor: dashboardRefreshing ? 'wait' : 'pointer', fontWeight: '600', background: '#fff' }}
+              >
+                {dashboardRefreshing ? 'Refreshing...' : 'Refresh Dashboard'}
+              </button>
+            )}
+
             {activeTab !== 'dashboard' && (
               <div className="search-wrapper">
                 <FiSearch className="search-icon" size={16} />
@@ -203,11 +253,9 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
               >
                 <option value="all">All Statuses</option>
                 <option value="pending">Pending</option>
-                <option value="confirmed">Confirmed</option>
                 <option value="processing">Processing</option>
                 <option value="shipped">Shipped</option>
                 <option value="delivered">Delivered</option>
-                <option value="cancelled">Cancelled</option>
               </select>
             )}
 
@@ -239,7 +287,7 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
                     <div className="metric-icon" style={{ background: '#dcfce7', color: '#16a34a' }}><FiDollarSign /></div>
                     <div>
                       <div style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Revenue</div>
-                      <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#0f172a' }}>Rs. {totalRevenue.toFixed(2)}</div>
+                      <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#0f172a' }}>{formatINR(totalRevenue)}</div>
                     </div>
                   </div>
 
@@ -247,7 +295,7 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
                     <div className="metric-icon" style={{ background: '#e0e7ff', color: '#4f46e5' }}><FiShoppingCart /></div>
                     <div>
                       <div style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Orders</div>
-                      <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#0f172a' }}>{orders.length}</div>
+                      <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#0f172a' }}>{totalOrders}</div>
                     </div>
                   </div>
 
@@ -267,6 +315,52 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
                     </div>
                   </div>
                 </div>
+
+                {statsLoading && <div style={{ marginBottom: '1rem', color: '#64748b', fontSize: '0.9rem' }}>Loading analytics...</div>}
+                {statsError && <div style={{ marginBottom: '1rem', color: '#dc2626', fontSize: '0.9rem' }}>{statsError}</div>}
+
+                {!statsLoading && !statsError && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+                    <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.25rem' }}>
+                      <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.75rem', color: '#0f172a' }}>Monthly Revenue Trend</h3>
+                      {monthlyRevenue.length === 0 ? (
+                        <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>No revenue data available yet.</p>
+                      ) : (
+                        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(monthlyRevenue.length, 8)}, minmax(0, 1fr))`, alignItems: 'end', gap: '8px', minHeight: '130px' }}>
+                          {monthlyRevenue.slice(-8).map((item) => {
+                            const height = Math.max((Number(item.totalRevenue || 0) / chartMaxRevenue) * 100, 8)
+                            const label = `${String(item.month).padStart(2, '0')}/${item.year}`
+                            return (
+                              <div key={label} style={{ textAlign: 'center' }}>
+                                <div title={`${label}: ${formatINR(item.totalRevenue)}`} style={{ height: `${height}px`, borderRadius: '8px 8px 0 0', background: 'linear-gradient(180deg, #2563eb 0%, #60a5fa 100%)' }} />
+                                <div style={{ marginTop: '6px', color: '#64748b', fontSize: '0.72rem' }}>{label}</div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.25rem' }}>
+                      <h3 style={{ fontSize: '1rem', fontWeight: '700', marginBottom: '0.75rem', color: '#0f172a' }}>Top Selling Products</h3>
+                      {topSellingProducts.length === 0 ? (
+                        <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>No product sales data available yet.</p>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          {topSellingProducts.map((item, index) => (
+                            <div key={`${item.productId || item.name}-${index}`} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem' }}>
+                              <div>
+                                <div style={{ fontWeight: '600', color: '#1e293b', fontSize: '0.9rem' }}>{item.name}</div>
+                                <div style={{ color: '#64748b', fontSize: '0.8rem' }}>{item.quantitySold} units sold</div>
+                              </div>
+                              <div style={{ fontWeight: '700', color: '#0f172a' }}>{formatINR(item.revenue)}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem' }}>
                   <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
@@ -294,9 +388,19 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
                       <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0 }}>Low Stock Alerts</h3>
                     </div>
                     <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                      {unreadAlerts.length === 0 ? (
-                        <p style={{ color: '#64748b', margin: 0 }}>No unread inventory alerts.</p>
-                      ) : unreadAlerts.slice(0, 5).map(a => (
+                      {lowStockProducts.length === 0 ? (
+                        <p style={{ color: '#64748b', margin: 0 }}>No low-stock products right now.</p>
+                      ) : lowStockProducts.slice(0, 5).map(p => (
+                        <div key={p._id} style={{ padding: '0.875rem', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px' }}>
+                          <div style={{ fontWeight: '700', color: '#92400e', fontSize: '0.9rem' }}>
+                            {p.name}
+                          </div>
+                          <div style={{ fontSize: '0.8rem', color: '#78350f', marginTop: '4px' }}>
+                            Current stock: {p.stock} • Threshold: {p.lowStockThreshold ?? 5}
+                          </div>
+                        </div>
+                      ))}
+                      {unreadAlerts.length > 0 && unreadAlerts.slice(0, 3).map(a => (
                         <div key={a._id} style={{ padding: '0.875rem', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px' }}>
                           <div style={{ fontWeight: '700', color: '#92400e', fontSize: '0.9rem' }}>
                             {a.product?.name || 'Product'} low stock
@@ -310,6 +414,7 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
                                 try {
                                   await adminAPI.markAlertRead(a._id)
                                   setAlerts(alerts.map(alert => alert._id === a._id ? { ...alert, isRead: true } : alert))
+                                  loadLowStock()
                                 } catch (err) {
                                   showMessage('Failed to update alert', 'error')
                                 }
@@ -430,18 +535,20 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
                         </td>
                         <td>
                           <select
-                            value={o.status}
+                            value={o.status || 'pending'}
                             onChange={async (e) => {
                               try {
-                                await adminAPI.updateOrderStatus(o._id, e.target.value)
-                                setOrders(orders.map(ord => ord._id === o._id ? { ...ord, status: e.target.value } : ord))
+                                const { data: updatedOrder } = await adminAPI.updateOrderStatus(o._id, e.target.value)
+                                setOrders(orders.map(ord => ord._id === updatedOrder._id ? updatedOrder : ord))
+                                loadOrders()
+                                loadStats()
                                 showMessage('Order status updated')
                               } catch (err) { showMessage('Failed to update order', 'error') }
                             }}
                             className="form-input"
                             style={{ padding: '0.35rem 2rem 0.35rem 0.75rem', width: 'auto', background: st.bg, color: st.text, borderColor: 'transparent', fontWeight: '600', borderRadius: '9999px', cursor: 'pointer' }}
                           >
-                            {['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'].map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+                            {['pending', 'processing', 'shipped', 'delivered'].map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
                           </select>
                         </td>
                         <td>
@@ -490,6 +597,11 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
                   <div className="form-group">
                     <label className="form-label">Current Stock</label>
                     <input type="number" className="form-input" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} required placeholder="0" />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Low Stock Threshold</label>
+                    <input type="number" className="form-input" value={form.lowStockThreshold} onChange={e => setForm({ ...form, lowStockThreshold: e.target.value })} min="0" placeholder="5" />
                   </div>
 
                   <div className="form-group">

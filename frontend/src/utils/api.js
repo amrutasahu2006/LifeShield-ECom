@@ -59,9 +59,11 @@ export const createRazorpayOrder = (amount) => paymentAPI.createRazorpayOrder(am
 export const verifyPayment = (data) => paymentAPI.verifyPayment(data)
 
 export const adminAPI = {
+  getStats: () => API.get('/admin/stats'),
   createProduct: (data) => API.post('/admin/products', data),
   updateProduct: (id, data) => API.put(`/admin/products/${id}`, data),
   deleteProduct: (id) => API.delete(`/admin/products/${id}`),
+  getLowStockProducts: () => API.get('/admin/low-stock'),
   getAllOrders: () => API.get('/admin/orders'),
   updateOrderStatus: (id, status) => API.put(`/admin/orders/${id}/status`, { status }),
   getUsers: () => API.get('/admin/users'),

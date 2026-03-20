@@ -2,15 +2,35 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { orderAPI } from '../utils/api'
 
-const statusColors = { pending: '#f59e0b', confirmed: '#2563eb', processing: '#3b82f6', shipped: '#8b5cf6', delivered: '#16a34a', cancelled: '#dc2626' }
+const statusColors = {
+  pending: '#64748b',
+  processing: '#2563eb',
+  shipped: '#ea580c',
+  delivered: '#16a34a'
+}
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const formatINR = (value) => `Rs. ${Number(value).toFixed(2)}`
 
+  const loadOrders = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true)
+    if (silent) setRefreshing(true)
+    try {
+      const r = await orderAPI.getMyOrders()
+      setOrders(r.data)
+    } finally {
+      if (!silent) setLoading(false)
+      if (silent) setRefreshing(false)
+    }
+  }
+
   useEffect(() => {
-    orderAPI.getMyOrders().then(r => { setOrders(r.data); setLoading(false) }).catch(() => setLoading(false))
+    loadOrders()
+    const intervalId = setInterval(() => loadOrders({ silent: true }), 15000)
+    return () => clearInterval(intervalId)
   }, [])
 
   if (loading) return <div style={{ textAlign: 'center', padding: '80px', color: '#64748b' }}>Loading orders...</div>
@@ -18,7 +38,12 @@ export default function OrdersPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '32px 24px' }}>
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-        <h1 style={{ fontSize: '30px', fontWeight: '800', marginBottom: '32px', color: '#1e293b' }}>📦 My Orders</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
+          <h1 style={{ fontSize: '30px', fontWeight: '800', margin: 0, color: '#1e293b' }}>📦 My Orders</h1>
+          <button onClick={() => loadOrders({ silent: true })} disabled={refreshing} style={{ padding: '10px 14px', border: '1px solid #e2e8f0', background: '#fff', borderRadius: '10px', fontWeight: '600', cursor: refreshing ? 'wait' : 'pointer', color: '#334155' }}>
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
         {orders.length === 0
           ? <div style={{ textAlign: 'center', padding: '60px', background: '#fff', borderRadius: '20px' }}>
               <div style={{ fontSize: '64px', marginBottom: '16px' }}>📭</div>
@@ -33,7 +58,7 @@ export default function OrdersPage() {
                   <div style={{ color: '#64748b', fontSize: '13px', marginTop: '4px' }}>{new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <span style={{ padding: '5px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: '700', background: (statusColors[order.status] || '#gray') + '20', color: statusColors[order.status] || '#gray', textTransform: 'capitalize' }}>{order.status}</span>
+                  <span style={{ padding: '5px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: '700', background: (statusColors[order.status] || '#64748b') + '20', color: statusColors[order.status] || '#64748b', textTransform: 'capitalize' }}>{order.status || 'pending'}</span>
                   <span style={{ fontWeight: '800', fontSize: '18px', color: '#dc2626' }}>{formatINR(order.totalPrice)}</span>
                 </div>
               </div>

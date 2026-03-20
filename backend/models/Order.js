@@ -31,13 +31,34 @@ const orderSchema = new mongoose.Schema({
   totalPrice: { type: Number, required: true },
   isPaid: { type: Boolean, default: false },
   paidAt: Date,
+  processedAt: Date,
+  shippedAt: Date,
   isDelivered: { type: Boolean, default: false },
   deliveredAt: Date,
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'],
-    default: 'confirmed'
+    enum: ['pending', 'processing', 'shipped', 'delivered'],
+    default: 'pending'
   }
 }, { timestamps: true });
+
+orderSchema.pre('save', function (next) {
+  if (!this.status) {
+    this.status = 'pending';
+  }
+
+  if (this.status === 'processing' && !this.processedAt) {
+    this.processedAt = new Date();
+  }
+  if (this.status === 'shipped' && !this.shippedAt) {
+    this.shippedAt = new Date();
+  }
+  if (this.status === 'delivered' && !this.deliveredAt) {
+    this.deliveredAt = new Date();
+    this.isDelivered = true;
+  }
+
+  next();
+});
 
 module.exports = mongoose.model('Order', orderSchema);

@@ -66,3 +66,22 @@ exports.deleteProduct = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+exports.getLowStockProducts = async (req, res) => {
+  try {
+    const products = await Product.find({
+      $expr: {
+        $lte: [
+          { $ifNull: ['$stock', 0] },
+          { $ifNull: ['$lowStockThreshold', 5] }
+        ]
+      }
+    })
+      .select('name sku stock lowStockThreshold category updatedAt')
+      .sort({ stock: 1, updatedAt: -1 });
+
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

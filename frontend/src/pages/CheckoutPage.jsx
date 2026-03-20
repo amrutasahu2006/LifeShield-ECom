@@ -4,7 +4,7 @@ import { useCart } from '../context/CartContext'
 import { createRazorpayOrder, orderAPI, verifyPayment } from '../utils/api'
 
 export default function CheckoutPage() {
-  const { cart } = useCart()
+  const { cart, fetchCart } = useCart()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState(1)
@@ -75,6 +75,8 @@ export default function CheckoutPage() {
                 paymentMethod: 'Razorpay',
                 verifiedPayment: verificationData.verifiedPayment
               })
+
+              await fetchCart()
 
               navigate('/order-success', {
                 state: { orderId: orderData._id, total: orderData.totalPrice }

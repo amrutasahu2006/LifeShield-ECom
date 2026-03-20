@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { createProduct, updateProduct, deleteProduct } = require('../controllers/productController');
+const { createProduct, updateProduct, deleteProduct, getLowStockProducts } = require('../controllers/productController');
 const { getAllOrders, updateOrderStatus } = require('../controllers/orderController');
+const { getDashboardStats } = require('../controllers/adminController');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
 const User = require('../models/User');
 const InventoryAlert = require('../models/InventoryAlert');
@@ -12,8 +13,10 @@ router.use(protect, adminOnly);
 router.post('/products', createProduct);
 router.put('/products/:id', updateProduct);
 router.delete('/products/:id', deleteProduct);
+router.get('/low-stock', getLowStockProducts);
 
 // Order management
+router.get('/stats', getDashboardStats);
 router.get('/orders', getAllOrders);
 router.put('/orders/:id/status', updateOrderStatus);
 

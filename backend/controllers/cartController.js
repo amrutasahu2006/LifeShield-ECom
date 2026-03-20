@@ -14,18 +14,31 @@ exports.getCart = async (req, res) => {
 exports.addToCart = async (req, res) => {
   const { productId, quantity = 1 } = req.body;
   try {
+    const requestedQty = Number(quantity);
+    if (!Number.isFinite(requestedQty) || requestedQty <= 0) {
+      return res.status(400).json({ message: 'Invalid quantity' });
+    }
+
     const product = await Product.findById(productId);
     if (!product) return res.status(404).json({ message: 'Product not found' });
-    if (product.stock < quantity) return res.status(400).json({ message: 'Insufficient stock' });
+
+    const availableStock = Number.isFinite(Number(product.stock)) ? Math.floor(Number(product.stock)) : 0;
+    if (availableStock < requestedQty) {
+      return res.status(400).json({ message: 'Product out of stock' });
+    }
 
     let cart = await Cart.findOne({ user: req.user._id });
     if (!cart) cart = new Cart({ user: req.user._id, items: [] });
 
     const existingIndex = cart.items.findIndex(i => i.product.toString() === productId);
     if (existingIndex >= 0) {
-      cart.items[existingIndex].quantity += quantity;
+      const nextQuantity = cart.items[existingIndex].quantity + Math.floor(requestedQty);
+      if (nextQuantity > availableStock) {
+        return res.status(400).json({ message: 'Product out of stock' });
+      }
+      cart.items[existingIndex].quantity = nextQuantity;
     } else {
-      cart.items.push({ product: productId, quantity, price: product.price });
+      cart.items.push({ product: productId, quantity: Math.floor(requestedQty), price: product.price });
     }
     cart.calculateTotal();
     await cart.save();
@@ -39,16 +52,29 @@ exports.addToCart = async (req, res) => {
 exports.updateCartItem = async (req, res) => {
   const { quantity } = req.body;
   try {
+    const requestedQty = Number(quantity);
+    if (!Number.isFinite(requestedQty)) {
+      return res.status(400).json({ message: 'Invalid quantity' });
+    }
+
     const cart = await Cart.findOne({ user: req.user._id });
     if (!cart) return res.status(404).json({ message: 'Cart not found' });
 
     const item = cart.items.find(i => i._id.toString() === req.params.itemId);
     if (!item) return res.status(404).json({ message: 'Item not found in cart' });
 
-    if (quantity <= 0) {
+    if (requestedQty <= 0) {
       cart.items = cart.items.filter(i => i._id.toString() !== req.params.itemId);
     } else {
-      item.quantity = quantity;
+      const product = await Product.findById(item.product);
+      if (!product) return res.status(404).json({ message: 'Product not found' });
+
+      const availableStock = Number.isFinite(Number(product.stock)) ? Math.floor(Number(product.stock)) : 0;
+      if (availableStock < Math.floor(requestedQty)) {
+        return res.status(400).json({ message: 'Product out of stock' });
+      }
+
+      item.quantity = Math.floor(requestedQty);
     }
     cart.calculateTotal();
     await cart.save();

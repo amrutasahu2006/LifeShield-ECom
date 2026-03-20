@@ -68,6 +68,19 @@ lifeshield/
 
 ---
 
+## ✨ FEATURES
+
+- JWT authentication with role-based access (`user` and `admin`)
+- Product catalog with search, filters, pagination, and featured products
+- Cart and checkout flow with stock-aware validation
+- Order processing with payment verification support
+- Admin panel for product CRUD, order status updates, and alert monitoring
+- ERP capabilities for inventory tracking, automatic stock deduction, and low-stock visibility
+- ERP order lifecycle tracking with admin-controlled status progression
+- ERP sales and revenue analytics with dashboard-level insights
+
+---
+
 ## ⚙️ STEP-BY-STEP SETUP GUIDE
 
 ### Prerequisites
@@ -205,9 +218,60 @@ npm run preview    # Preview the production build locally
 | POST   | /products             | Create new product      |
 | PUT    | /products/:id         | Update product          |
 | DELETE | /products/:id         | Delete product          |
+| GET    | /stats                | Get sales & revenue analytics dashboard stats |
+| GET    | /low-stock            | Get products at/below low-stock threshold |
 | GET    | /orders               | Get all orders          |
 | PUT    | /orders/:id/status    | Update order status     |
 | GET    | /users                | List all registered users|
+
+---
+
+## 📦 ERP Features – Inventory Management
+
+- Inventory fields are part of the product model:
+    - `stock` tracks live available units for each SKU.
+    - `lowStockThreshold` defines when a product should be considered low stock (default: `5`).
+- Stock tracking logic is enforced during checkout:
+    - Before order creation, the backend validates quantity against current DB stock for each cart item.
+    - If any product is unavailable, order creation is blocked with `Product out of stock`.
+- Automatic stock deduction on order:
+    - On successful order placement, stock is reduced for each purchased product using transactional/atomic updates.
+    - Cart clearing and order persistence happen in the same order workflow to keep state consistent.
+- Low stock alert system:
+    - When `stock <= lowStockThreshold`, backend logs a low-stock warning and writes an inventory alert entry.
+    - Admin users can query low-stock products via `GET /api/admin/low-stock`.
+
+---
+
+## 📦 ERP Features – Order Management
+
+- Order lifecycle tracking is implemented on each order with status workflow:
+    - `pending` → `processing` → `shipped` → `delivered`
+- New orders are automatically initialized as `pending`.
+- Admin control over order status:
+    - Admins can update order status from the dashboard.
+    - Backend validates status updates against allowed lifecycle states.
+    - Route: `PUT /api/admin/orders/:id/status` (protected with `protect` + `adminOnly`).
+- User visibility of order progress:
+    - Users can see color-coded order status badges in their order history.
+    - Status changes are reflected after admin updates.
+- Lifecycle stage timestamps are tracked for operational visibility:
+    - `processedAt`, `shippedAt`, `deliveredAt`.
+
+---
+
+## 📦 ERP Features – Sales & Revenue Analytics
+
+- Admin analytics API provides sales intelligence for dashboard reporting.
+- Core tracking metrics:
+    - `totalOrders`: number of orders processed.
+    - `totalRevenue`: cumulative revenue from order totals.
+- Advanced analytics included:
+    - Monthly revenue aggregation for trend visibility.
+    - Top-selling products by quantity and revenue contribution.
+- Business decision-making value:
+    - Helps identify growth periods, monitor sales momentum, and prioritize high-performing products.
+    - Supports smarter planning for campaigns, inventory allocation, and operational targets.
 
 ---
 

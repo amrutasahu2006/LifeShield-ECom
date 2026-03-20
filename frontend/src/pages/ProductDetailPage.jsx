@@ -30,6 +30,10 @@ export default function ProductDetailPage() {
 
   const color = categoryColors[product.category] || '#dc2626'
   const formatINR = (value) => `Rs. ${Number(value).toFixed(2)}`
+  const stock = Number.isFinite(Number(product.stock)) ? Math.floor(Number(product.stock)) : 0
+  const lowStockThreshold = Number.isFinite(Number(product.lowStockThreshold)) ? Math.floor(Number(product.lowStockThreshold)) : 5
+  const isOutOfStock = stock <= 0
+  const isLowStock = !isOutOfStock && stock <= lowStockThreshold
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '32px 24px' }}>
@@ -55,21 +59,26 @@ export default function ProductDetailPage() {
             <p style={{ color: '#475569', lineHeight: '1.7', marginBottom: '24px', fontSize: '15px' }}>{product.description}</p>
 
             <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '16px', marginBottom: '24px' }}>
-              {[['Brand', product.brand || 'LIFESHIELD'], ['SKU', product.sku], ['Stock', product.stock > 0 ? `${product.stock} in stock` : 'Out of Stock']].map(([l, v]) => (
+              {[['Brand', product.brand || 'LIFESHIELD'], ['SKU', product.sku], ['Stock', stock > 0 ? `${stock} in stock` : 'Out of Stock']].map(([l, v]) => (
                 <div key={l} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
                   <span style={{ color: '#64748b' }}>{l}</span>
-                  <span style={{ fontWeight: '700', color: l === 'Stock' ? (product.stock > 0 ? '#16a34a' : '#dc2626') : '#1e293b' }}>{v}</span>
+                  <span style={{ fontWeight: '700', color: l === 'Stock' ? (stock > 0 ? '#16a34a' : '#dc2626') : '#1e293b' }}>{v}</span>
                 </div>
               ))}
+              {isLowStock && (
+                <div style={{ marginTop: '8px', fontSize: '12px', fontWeight: '700', color: '#d97706' }}>
+                  Low Stock: only {stock} left
+                </div>
+              )}
             </div>
 
-            {product.stock > 0 && (
+            {!isOutOfStock && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
                 <label style={{ fontWeight: '600' }}>Qty:</label>
                 <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
                   <button onClick={() => setQty(Math.max(1, qty - 1))} style={{ padding: '8px 14px', background: '#f1f5f9', fontWeight: '700', fontSize: '16px', border: 'none', cursor: 'pointer' }}>-</button>
                   <span style={{ padding: '8px 16px', fontWeight: '600' }}>{qty}</span>
-                  <button onClick={() => setQty(Math.min(product.stock, qty + 1))} style={{ padding: '8px 14px', background: '#f1f5f9', fontWeight: '700', fontSize: '16px', border: 'none', cursor: 'pointer' }}>+</button>
+                  <button onClick={() => setQty(Math.min(stock, qty + 1))} style={{ padding: '8px 14px', background: '#f1f5f9', fontWeight: '700', fontSize: '16px', border: 'none', cursor: 'pointer' }}>+</button>
                 </div>
               </div>
             )}
@@ -77,11 +86,11 @@ export default function ProductDetailPage() {
             {msg && <div style={{ padding: '12px', borderRadius: '8px', marginBottom: '12px', background: msg.includes('✅') ? '#dcfce7' : '#fee2e2', color: msg.includes('✅') ? '#16a34a' : '#dc2626', fontWeight: '600', fontSize: '14px' }}>{msg}</div>}
 
             <div style={{ display: 'flex', gap: '12px' }}>
-              <button onClick={handleAddToCart} disabled={loading || product.stock === 0}
-                style={{ flex: 1, padding: '14px', background: product.stock === 0 ? '#94a3b8' : '#dc2626', color: '#fff', borderRadius: '12px', fontSize: '16px', fontWeight: '700', cursor: product.stock === 0 ? 'not-allowed' : 'pointer', border: 'none' }}>
-                {product.stock === 0 ? 'Out of Stock' : '🛒 Add to Cart'}
+              <button onClick={handleAddToCart} disabled={loading || isOutOfStock}
+                style={{ flex: 1, padding: '14px', background: isOutOfStock ? '#94a3b8' : '#dc2626', color: '#fff', borderRadius: '12px', fontSize: '16px', fontWeight: '700', cursor: isOutOfStock ? 'not-allowed' : 'pointer', border: 'none' }}>
+                {isOutOfStock ? 'Out of Stock' : '🛒 Add to Cart'}
               </button>
-              {product.stock > 0 && (
+              {!isOutOfStock && (
                 <button onClick={async () => { await handleAddToCart(); navigate('/cart') }}
                   style={{ padding: '14px 20px', background: '#1e293b', color: '#fff', borderRadius: '12px', fontSize: '14px', fontWeight: '600', cursor: 'pointer', border: 'none' }}>
                   Buy Now
