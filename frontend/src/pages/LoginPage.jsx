@@ -15,7 +15,10 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault(); setError(''); setLoading(true)
     try {
-      const { data } = await authAPI.login(form)
+      const { data } = await authAPI.login({
+        email: form.email.trim(),
+        password: form.password
+      })
       login(data)
       await fetchCart()
 
