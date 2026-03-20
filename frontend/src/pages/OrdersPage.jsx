@@ -7,6 +7,7 @@ const statusColors = { pending: '#f59e0b', confirmed: '#2563eb', processing: '#3
 export default function OrdersPage() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
+  const formatINR = (value) => `Rs. ${Number(value).toFixed(2)}`
 
   useEffect(() => {
     orderAPI.getMyOrders().then(r => { setOrders(r.data); setLoading(false) }).catch(() => setLoading(false))
@@ -33,14 +34,14 @@ export default function OrdersPage() {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                   <span style={{ padding: '5px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: '700', background: (statusColors[order.status] || '#gray') + '20', color: statusColors[order.status] || '#gray', textTransform: 'capitalize' }}>{order.status}</span>
-                  <span style={{ fontWeight: '800', fontSize: '18px', color: '#dc2626' }}>${order.totalPrice.toFixed(2)}</span>
+                  <span style={{ fontWeight: '800', fontSize: '18px', color: '#dc2626' }}>{formatINR(order.totalPrice)}</span>
                 </div>
               </div>
               <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
                 {order.items.map((item, idx) => (
                   <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
                     <span style={{ color: '#475569' }}>{item.name} <span style={{ color: '#94a3b8' }}>×{item.quantity}</span></span>
-                    <span style={{ fontWeight: '600' }}>${(item.price * item.quantity).toFixed(2)}</span>
+                    <span style={{ fontWeight: '600' }}>{formatINR(item.price * item.quantity)}</span>
                   </div>
                 ))}
               </div>

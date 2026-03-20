@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
-import { orderAPI } from '../utils/api'
+import { createRazorpayOrder, orderAPI, verifyPayment } from '../utils/api'
 
 export default function CheckoutPage() {
   const { cart } = useCart()
@@ -9,13 +9,13 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState(1)
   const [address, setAddress] = useState({ fullName: '', street: '', city: '', state: '', zip: '', country: 'India' })
-  const [card, setCard] = useState({ number: '', expiry: '', cvv: '', name: '' })
   const [errors, setErrors] = useState({})
   const [orderError, setOrderError] = useState('')
 
-  const shipping = cart.totalAmount > 100 ? 0 : 9.99
+  const shipping = cart.totalAmount > 3000 ? 0 : 99
   const tax = parseFloat((cart.totalAmount * 0.1).toFixed(2))
   const total = parseFloat((cart.totalAmount + shipping + tax).toFixed(2))
+  const formatINR = (value) => `Rs. ${Number(value).toFixed(2)}`
 
   const validateAddress = () => {
     const e = {}
@@ -31,11 +31,69 @@ export default function CheckoutPage() {
   const handlePlaceOrder = async () => {
     setLoading(true)
     setOrderError('')
+
     try {
-      const { data } = await orderAPI.create({ shippingAddress: address, paymentMethod: 'Card (Demo)' })
-      navigate('/order-success', { state: { orderId: data._id, total: data.totalPrice } })
+      if (!window.Razorpay) {
+        throw new Error('Razorpay SDK failed to load. Please refresh and try again.')
+      }
+
+      const keyId = import.meta.env.VITE_RAZORPAY_KEY_ID
+      if (!keyId) {
+        throw new Error('Razorpay key is missing. Set VITE_RAZORPAY_KEY_ID in frontend environment.')
+      }
+
+      const { data: razorpayOrder } = await createRazorpayOrder(total)
+      const user = JSON.parse(localStorage.getItem('lifeshieldUser') || 'null')
+
+      await new Promise((resolve, reject) => {
+        const paymentObject = new window.Razorpay({
+          key: keyId,
+          amount: razorpayOrder.amount,
+          currency: razorpayOrder.currency,
+          name: 'LIFESHIELD',
+          description: 'Secure payment for your order',
+          order_id: razorpayOrder.id,
+          prefill: {
+            name: address.fullName || user?.name || '',
+            email: user?.email || ''
+          },
+          notes: {
+            city: address.city
+          },
+          theme: {
+            color: '#dc2626'
+          },
+          handler: async (response) => {
+            try {
+              const { data: verificationData } = await verifyPayment(response)
+              if (!verificationData?.success || !verificationData?.verifiedPayment) {
+                return reject(new Error('Payment verification failed'))
+              }
+
+              const { data: orderData } = await orderAPI.create({
+                shippingAddress: address,
+                paymentMethod: 'Razorpay',
+                verifiedPayment: verificationData.verifiedPayment
+              })
+
+              navigate('/order-success', {
+                state: { orderId: orderData._id, total: orderData.totalPrice }
+              })
+              resolve()
+            } catch (err) {
+              reject(err)
+            }
+          }
+        })
+
+        paymentObject.on('payment.failed', (response) => {
+          reject(new Error(response?.error?.description || 'Payment failed. Please try again.'))
+        })
+
+        paymentObject.open()
+      })
     } catch (err) {
-      setOrderError(err.response?.data?.message || 'Order failed. Please try again.')
+      setOrderError(err.response?.data?.message || err.message || 'Order failed. Please try again.')
     } finally { setLoading(false) }
   }
 
@@ -78,23 +136,13 @@ export default function CheckoutPage() {
 
             {step === 2 && (
               <>
-                <h2 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '8px' }}>💳 Payment (Demo)</h2>
-                <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '24px', padding: '12px', background: '#fef9c3', borderRadius: '8px', border: '1px solid #fde047' }}>
-                  ⚠️ This is a demo checkout. No real payment is processed.
+                <h2 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '8px' }}>💳 Payment Method</h2>
+                <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '24px', padding: '12px', background: '#eff6ff', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
+                  You will complete payment securely in Razorpay popup on the next step.
                 </p>
-                {[['number','Card Number','1234 5678 9012 3456'],['name','Name on Card','John Doe']].map(([f,l,ph]) => (
-                  <div key={f} style={{ marginBottom: '16px' }}>
-                    <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', fontSize: '13px' }}>{l}</label>
-                    <input value={card[f]} onChange={e => setCard({ ...card, [f]: e.target.value })} placeholder={ph} style={inputStyle} />
-                  </div>
-                ))}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-                  {[['expiry','Expiry','MM/YY'],['cvv','CVV','123']].map(([f,l,ph]) => (
-                    <div key={f}>
-                      <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', fontSize: '13px' }}>{l}</label>
-                      <input value={card[f]} onChange={e => setCard({ ...card, [f]: e.target.value })} placeholder={ph} style={inputStyle} />
-                    </div>
-                  ))}
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', padding: '16px', marginBottom: '24px' }}>
+                  <p style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: '#1e293b' }}>Razorpay</p>
+                  <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#64748b' }}>UPI, cards, netbanking, and wallets</p>
                 </div>
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <button onClick={() => setStep(1)} style={{ padding: '14px 20px', background: '#f1f5f9', color: '#374151', borderRadius: '10px', fontWeight: '600', cursor: 'pointer', border: 'none' }}>← Back</button>
@@ -118,14 +166,14 @@ export default function CheckoutPage() {
                 {cart.items.map(item => (
                   <div key={item._id} style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #f1f5f9', fontSize: '14px' }}>
                     <span>{item.product?.name} × {item.quantity}</span>
-                    <span style={{ fontWeight: '700' }}>${(item.price * item.quantity).toFixed(2)}</span>
+                    <span style={{ fontWeight: '700' }}>{formatINR(item.price * item.quantity)}</span>
                   </div>
                 ))}
                 <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
                   <button onClick={() => setStep(2)} style={{ padding: '14px 20px', background: '#f1f5f9', color: '#374151', borderRadius: '10px', fontWeight: '600', cursor: 'pointer', border: 'none' }}>← Back</button>
                   <button onClick={handlePlaceOrder} disabled={loading}
                     style={{ flex: 1, padding: '14px', background: '#dc2626', color: '#fff', borderRadius: '10px', fontWeight: '700', fontSize: '16px', cursor: loading ? 'wait' : 'pointer', border: 'none' }}>
-                    {loading ? 'Placing Order...' : `🔒 Place Order – $${total.toFixed(2)}`}
+                    {loading ? 'Placing Order...' : `🔒 Place Order – ${formatINR(total)}`}
                   </button>
                 </div>
               </>
@@ -137,18 +185,18 @@ export default function CheckoutPage() {
             {cart.items.map(item => (
               <div key={item._id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
                 <span style={{ color: '#64748b' }}>{(item.product?.name || '').substring(0, 22)}... ×{item.quantity}</span>
-                <span style={{ fontWeight: '600' }}>${(item.price * item.quantity).toFixed(2)}</span>
+                <span style={{ fontWeight: '600' }}>{formatINR(item.price * item.quantity)}</span>
               </div>
             ))}
             <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '12px', marginTop: '8px' }}>
-              {[['Subtotal', `$${cart.totalAmount.toFixed(2)}`], ['Shipping', shipping === 0 ? 'FREE' : `$${shipping.toFixed(2)}`], ['Tax', `$${tax.toFixed(2)}`]].map(([l, v]) => (
+              {[['Subtotal', formatINR(cart.totalAmount)], ['Shipping', shipping === 0 ? 'FREE' : formatINR(shipping)], ['Tax', formatINR(tax)]].map(([l, v]) => (
                 <div key={l} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px', color: '#64748b' }}>
                   <span>{l}</span><span style={{ color: '#1e293b', fontWeight: '600' }}>{v}</span>
                 </div>
               ))}
               <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
                 <span style={{ fontWeight: '800' }}>Total</span>
-                <span style={{ fontWeight: '800', color: '#dc2626', fontSize: '18px' }}>${total.toFixed(2)}</span>
+                <span style={{ fontWeight: '800', color: '#dc2626', fontSize: '18px' }}>{formatINR(total)}</span>
               </div>
             </div>
           </div>

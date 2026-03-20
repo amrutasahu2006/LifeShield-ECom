@@ -4,22 +4,22 @@ import { useAuth } from '../context/AuthContext'
 import { loyaltyAPI } from '../utils/api'
 
 const tiers = [
-  { name: 'Bronze', icon: '🥉', color: '#cd7f32', bg: '#cd7f3215', range: '0 – 499 Points', pct: '1%', label: 'Points per $1', perks: ['Birthday bonus points (50 pts)', 'Member-only email alerts', 'Early access to sales', 'Free shipping over $75'], goal: 'Onboard & Activate' },
-  { name: 'Silver', icon: '🥈', color: '#9ca3af', bg: '#9ca3af15', range: '500 – 1,499 Points', pct: '2%', label: 'Points per $1', perks: ['All Bronze benefits', 'Free shipping over $50', 'Priority customer support', 'Quarterly safety newsletter'], goal: 'Increase Frequency' },
-  { name: 'Gold', icon: '🥇', color: '#f59e0b', bg: '#f59e0b15', range: '1,500 – 4,999 Points', pct: '3%', label: 'Points per $1', perks: ['All Silver benefits', 'Always free shipping', 'Exclusive Gold-only products', 'Emergency prep webinars (free)'], goal: 'Maximize Spend', popular: true },
-  { name: 'Platinum', icon: '💎', color: '#7c3aed', bg: '#7c3aed15', range: '5,000+ Points', pct: '5%', label: 'Points per $1', perks: ['All Gold benefits', 'Dedicated Safety Advisor', 'Priority 24hr shipping', 'Annual home safety audit'], goal: 'Lock In & Upsell' },
+  { name: 'Bronze', icon: '🥉', color: '#cd7f32', bg: '#cd7f3215', range: '0 – 499 Points', pct: '1%', label: 'Points per Rs. 1', perks: ['Birthday bonus points (50 pts)', 'Member-only email alerts', 'Early access to sales', 'Free shipping over Rs. 75'], goal: 'Onboard & Activate' },
+  { name: 'Silver', icon: '🥈', color: '#9ca3af', bg: '#9ca3af15', range: '500 – 1,499 Points', pct: '2%', label: 'Points per Rs. 1', perks: ['All Bronze benefits', 'Free shipping over Rs. 50', 'Priority customer support', 'Quarterly safety newsletter'], goal: 'Increase Frequency' },
+  { name: 'Gold', icon: '🥇', color: '#f59e0b', bg: '#f59e0b15', range: '1,500 – 4,999 Points', pct: '3%', label: 'Points per Rs. 1', perks: ['All Silver benefits', 'Always free shipping', 'Exclusive Gold-only products', 'Emergency prep webinars (free)'], goal: 'Maximize Spend', popular: true },
+  { name: 'Platinum', icon: '💎', color: '#7c3aed', bg: '#7c3aed15', range: '5,000+ Points', pct: '5%', label: 'Points per Rs. 1', perks: ['All Gold benefits', 'Dedicated Safety Advisor', 'Priority 24hr shipping', 'Annual home safety audit'], goal: 'Lock In & Upsell' },
 ]
 
 const activity = [
   { icon: '🛒', bg: '#dcfce7', title: 'Purchase – 72-Hour Emergency Kit', date: 'Dec 28, 2024 · Order #A3F2B9', pts: '+149 pts', earn: true },
   { icon: '🛒', bg: '#dcfce7', title: 'Purchase – First Aid Kit (326-Piece)', date: 'Dec 15, 2024 · Order #A1D8F5', pts: '+49 pts', earn: true },
-  { icon: '🎁', bg: '#fee2e2', title: 'Redeemed – $5 Discount Coupon', date: 'Dec 10, 2024', pts: '−500 pts', earn: false },
+  { icon: '🎁', bg: '#fee2e2', title: 'Redeemed – Rs. 5 Discount Coupon', date: 'Dec 10, 2024', pts: '−500 pts', earn: false },
   { icon: '🎂', bg: '#dbeafe', title: 'Birthday Bonus', date: 'Nov 5, 2024 · Annual Gift', pts: '+50 pts', earn: true },
   { icon: '🛒', bg: '#dcfce7', title: 'Purchase – Smoke & CO Detector', date: 'Oct 20, 2024 · Order #A9C1E4', pts: '+54 pts', earn: true },
 ]
 
 const rewards = [
-  { icon: '💰', name: '$5 Off Coupon', points: 500 },
+  { icon: '💰', name: 'Rs. 5 Off Coupon', points: 500 },
   { icon: '🚚', name: 'Free Expedited Shipping', points: 300 },
   { icon: '🩺', name: 'Travel First Aid Kit (Free)', points: 2500 },
   { icon: '📋', name: 'Home Safety Checklist PDF', points: 100 },
@@ -103,7 +103,7 @@ export default function CRMLoyaltyPage() {
           Earn points on every purchase. Redeem for discounts, free products, and exclusive perks. The more prepared you are, the more you save.
         </p>
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          {['✦ 1 Point per $1 spent', '✦ Bonus points on safety kits', '✦ Points never expire while active'].map(t => (
+          {['✦ 1 Point per Rs. 1 spent', '✦ Bonus points on safety kits', '✦ Points never expire while active'].map(t => (
             <div key={t} style={{ background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.2)', padding: '10px 20px', borderRadius: '10px', fontSize: '13px' }}>{t}</div>
           ))}
         </div>
@@ -176,7 +176,7 @@ export default function CRMLoyaltyPage() {
             <span>Gold (1,500)</span><span>{tier === 'Platinum' ? 'Highest tier unlocked 💎' : `${pointsToNextTier.toLocaleString()} pts to next tier`}</span><span>Platinum (5,000)</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(130px,1fr))', gap: '16px', marginBottom: '24px' }}>
-            {[[points.toLocaleString(),'Available Points'],[`${earnedEvents}`,'Point-Earning Events'],[`$${dashboard?.pointsValue || '0.00'}`,'Point Value'],[`$${(redeemedPoints / 100).toFixed(2)}`,'Saved via Points'],[`${activeMonths}`,'Months Active']].map(([v,l]) => (
+            {[[points.toLocaleString(),'Available Points'],[`${earnedEvents}`,'Point-Earning Events'],[`Rs. ${dashboard?.pointsValue || '0.00'}`,'Point Value'],[`Rs. ${(redeemedPoints / 100).toFixed(2)}`,'Saved via Points'],[`${activeMonths}`,'Months Active']].map(([v,l]) => (
               <div key={l} style={{ background: '#f8fafc', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
                 <div style={{ fontSize: '26px', fontWeight: '800', color: '#dc2626' }}>{v}</div>
                 <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>{l}</div>
@@ -189,7 +189,7 @@ export default function CRMLoyaltyPage() {
               style={{ background: '#dc2626', color: '#fff', padding: '12px 28px', borderRadius: '10px', fontWeight: '700', fontSize: '14px', border: 'none', cursor: 'pointer' }}>
               Redeem Points →
             </button>
-            <span style={{ fontSize: '12px', color: '#64748b' }}>100 points = $1 discount</span>
+            <span style={{ fontSize: '12px', color: '#64748b' }}>100 points = Rs. 1 discount</span>
           </div>
         </div>
 

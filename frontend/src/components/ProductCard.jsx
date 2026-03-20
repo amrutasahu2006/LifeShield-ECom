@@ -35,6 +35,7 @@ export default function ProductCard({ product }) {
   }
 
   const color = categoryColors[product.category] || '#dc2626'
+  const formatINR = (value) => `Rs. ${Number(value).toFixed(2)}`
 
   return (
     <div
@@ -62,7 +63,7 @@ export default function ProductCard({ product }) {
           <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#1e293b', marginBottom: '8px', lineHeight: '1.4', flex: 1 }}>{product.name}</h3>
           <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '12px', lineHeight: '1.5', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{product.description}</p>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-            <span style={{ fontSize: '20px', fontWeight: '800', color: '#dc2626' }}>${product.price.toFixed(2)}</span>
+            <span style={{ fontSize: '20px', fontWeight: '800', color: '#dc2626' }}>{formatINR(product.price)}</span>
             <span style={{ fontSize: '12px', fontWeight: '600', color: product.stock > 10 ? '#16a34a' : product.stock > 0 ? '#d97706' : '#dc2626' }}>
               {product.stock > 10 ? '✓ In Stock' : product.stock > 0 ? `Only ${product.stock} left` : '✗ Out of Stock'}
             </span>

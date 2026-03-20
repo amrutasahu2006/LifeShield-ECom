@@ -3,11 +3,12 @@ const Cart = require('../models/Cart');
 const Product = require('../models/Product');
 const User = require('../models/User');
 const InventoryAlert = require('../models/InventoryAlert');
+const { isPaymentVerificationValid } = require('../utils/paymentVerification');
 
 const LOW_STOCK_THRESHOLD = Number(process.env.LOW_STOCK_THRESHOLD || 20);
 
 exports.createOrder = async (req, res) => {
-  const { shippingAddress, paymentMethod } = req.body;
+  const { shippingAddress, paymentMethod, verifiedPayment } = req.body;
   try {
     const cart = await Cart.findOne({ user: req.user._id }).populate('items.product');
     if (!cart || cart.items.length === 0) return res.status(400).json({ message: 'Cart is empty' });
@@ -30,16 +31,50 @@ exports.createOrder = async (req, res) => {
     }));
 
     const itemsPrice = cart.totalAmount;
-    const shippingPrice = itemsPrice > 100 ? 0 : 9.99;
+    const shippingPrice = itemsPrice > 3000 ? 0 : 99;
     const taxPrice = parseFloat((itemsPrice * 0.1).toFixed(2));
     const totalPrice = parseFloat((itemsPrice + shippingPrice + taxPrice).toFixed(2));
+    const isRazorpayPayment = paymentMethod === 'Razorpay';
+
+    if (isRazorpayPayment) {
+      if (
+        !verifiedPayment ||
+        !verifiedPayment.token ||
+        !verifiedPayment.razorpayOrderId ||
+        !verifiedPayment.razorpayPaymentId
+      ) {
+        return res.status(400).json({ message: 'Payment verification required before placing order' });
+      }
+
+      const isValidPayment = isPaymentVerificationValid({
+        token: verifiedPayment.token,
+        userId: req.user._id.toString(),
+        razorpayOrderId: verifiedPayment.razorpayOrderId,
+        razorpayPaymentId: verifiedPayment.razorpayPaymentId,
+        amount: totalPrice
+      });
+
+      if (!isValidPayment) {
+        return res.status(400).json({ message: 'Invalid payment verification. Please pay again.' });
+      }
+    }
 
     const order = await Order.create({
       user: req.user._id,
       items: orderItems,
       shippingAddress,
       paymentMethod: paymentMethod || 'Card (Demo)',
-      paymentResult: { id: 'DEMO_' + Date.now(), status: 'completed', update_time: new Date().toISOString() },
+      paymentResult: isRazorpayPayment
+        ? {
+            id: verifiedPayment.razorpayPaymentId,
+            status: 'captured',
+            update_time: new Date().toISOString()
+          }
+        : {
+            id: 'DEMO_' + Date.now(),
+            status: 'completed',
+            update_time: new Date().toISOString()
+          },
       itemsPrice,
       shippingPrice,
       taxPrice,

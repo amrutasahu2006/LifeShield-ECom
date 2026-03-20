@@ -25,9 +25,10 @@ export default function CartPage() {
     </div>
   )
 
-  const shipping = cart.totalAmount > 100 ? 0 : 9.99
+  const shipping = cart.totalAmount > 3000 ? 0 : 99
   const tax = parseFloat((cart.totalAmount * 0.1).toFixed(2))
   const total = parseFloat((cart.totalAmount + shipping + tax).toFixed(2))
+  const formatINR = (value) => `Rs. ${Number(value).toFixed(2)}`
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '32px 24px' }}>
@@ -46,7 +47,7 @@ export default function CartPage() {
                 <div style={{ flex: 1 }}>
                   <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '4px', color: '#1e293b' }}>{item.product?.name}</h3>
                   <p style={{ color: '#64748b', fontSize: '13px' }}>{item.product?.category}</p>
-                  <p style={{ color: '#dc2626', fontWeight: '700', fontSize: '16px', marginTop: '4px' }}>${item.price?.toFixed(2)}</p>
+                  <p style={{ color: '#dc2626', fontWeight: '700', fontSize: '16px', marginTop: '4px' }}>{formatINR(item.price || 0)}</p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
                   <button onClick={() => updateItem(item._id, item.quantity - 1)} style={{ padding: '6px 12px', background: '#f1f5f9', fontWeight: '700', fontSize: '16px', border: 'none', cursor: 'pointer' }}>-</button>
@@ -54,7 +55,7 @@ export default function CartPage() {
                   <button onClick={() => updateItem(item._id, item.quantity + 1)} style={{ padding: '6px 12px', background: '#f1f5f9', fontWeight: '700', fontSize: '16px', border: 'none', cursor: 'pointer' }}>+</button>
                 </div>
                 <div style={{ textAlign: 'right', minWidth: '80px' }}>
-                  <p style={{ fontWeight: '700', fontSize: '16px' }}>${(item.price * item.quantity).toFixed(2)}</p>
+                  <p style={{ fontWeight: '700', fontSize: '16px' }}>{formatINR(item.price * item.quantity)}</p>
                   <button onClick={() => removeItem(item._id)} style={{ color: '#dc2626', fontSize: '12px', background: 'none', border: 'none', cursor: 'pointer', marginTop: '4px' }}>Remove</button>
                 </div>
               </div>
@@ -64,15 +65,15 @@ export default function CartPage() {
 
           <div style={{ background: '#fff', borderRadius: '20px', padding: '28px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', position: 'sticky', top: '90px' }}>
             <h2 style={{ fontSize: '20px', fontWeight: '800', marginBottom: '24px', color: '#1e293b' }}>Order Summary</h2>
-            {[['Subtotal', `$${cart.totalAmount.toFixed(2)}`], ['Shipping', shipping === 0 ? 'FREE 🎉' : `$${shipping.toFixed(2)}`], ['Tax (10%)', `$${tax.toFixed(2)}`]].map(([l, v]) => (
+            {[['Subtotal', formatINR(cart.totalAmount)], ['Shipping', shipping === 0 ? 'FREE 🎉' : formatINR(shipping)], ['Tax (10%)', formatINR(tax)]].map(([l, v]) => (
               <div key={l} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', color: '#64748b' }}>
                 <span>{l}</span><span style={{ color: '#1e293b', fontWeight: '600' }}>{v}</span>
               </div>
             ))}
-            {shipping === 0 && <p style={{ fontSize: '12px', color: '#16a34a', marginBottom: '12px' }}>✓ Free shipping on orders over $100</p>}
+            {shipping === 0 && <p style={{ fontSize: '12px', color: '#16a34a', marginBottom: '12px' }}>✓ Free shipping on orders over Rs. 3000</p>}
             <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '16px', marginTop: '8px', display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ fontWeight: '800', fontSize: '18px' }}>Total</span>
-              <span style={{ fontWeight: '800', fontSize: '22px', color: '#dc2626' }}>${total.toFixed(2)}</span>
+              <span style={{ fontWeight: '800', fontSize: '22px', color: '#dc2626' }}>{formatINR(total)}</span>
             </div>
             <button onClick={() => navigate('/checkout')}
               style={{ width: '100%', padding: '16px', background: '#dc2626', color: '#fff', borderRadius: '12px', fontWeight: '700', fontSize: '16px', marginTop: '20px', cursor: 'pointer', border: 'none' }}>

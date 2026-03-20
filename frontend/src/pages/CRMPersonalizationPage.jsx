@@ -7,10 +7,10 @@ import { authAPI, productAPI } from '../utils/api'
 const riskColors = { Fire: '#ef4444', Flooding: '#3b82f6', Tornado: '#8b5cf6', Earthquake: '#f97316' }
 
 const recommendations = [
-  { icon: '🎒', reason: '⚠️ Critical Gap: Emergency Kits', tag: '#dc2626', reasonBg: '#fee2e2', name: '72-Hour Emergency Survival Kit (4 Person)', desc: 'Essential for evacuation readiness and household 72-hour survival.', price: '$149.99', matchKeywords: ['72-hour emergency survival kit'] },
-  { icon: '💧', reason: '📍 Water Resilience', tag: '#dc2626', reasonBg: '#fee2e2', name: 'Emergency Water Filtration System', desc: 'Filters up to 100K gallons for supply disruption scenarios.', price: '$34.99', matchKeywords: ['water filtration'] },
-  { icon: '📻', reason: '🌪️ Multi-Risk Preparedness', tag: '#4f46e5', reasonBg: '#eef2ff', name: 'Hand Crank Emergency Weather Radio', desc: 'Critical for weather alerts, power outages, and emergency comms.', price: '$45.99', matchKeywords: ['weather radio', 'hand crank'] },
-  { icon: '🩹', reason: '🧰 Household Safety Baseline', tag: '#f97316', reasonBg: '#fff7ed', name: 'Professional 326-Piece First Aid Kit', desc: 'Comprehensive first-aid coverage for everyday and emergency response.', price: '$49.99', matchKeywords: ['326-piece first aid kit', 'first aid kit'] },
+  { icon: '🎒', reason: '⚠️ Critical Gap: Emergency Kits', tag: '#dc2626', reasonBg: '#fee2e2', name: '72-Hour Emergency Survival Kit (4 Person)', desc: 'Essential for evacuation readiness and household 72-hour survival.', price: 'Rs. 12499.00', matchKeywords: ['72-hour emergency survival kit'] },
+  { icon: '💧', reason: '📍 Water Resilience', tag: '#dc2626', reasonBg: '#fee2e2', name: 'Emergency Water Filtration System', desc: 'Filters up to 100K gallons for supply disruption scenarios.', price: 'Rs. 2899.00', matchKeywords: ['water filtration'] },
+  { icon: '📻', reason: '🌪️ Multi-Risk Preparedness', tag: '#4f46e5', reasonBg: '#eef2ff', name: 'Hand Crank Emergency Weather Radio', desc: 'Critical for weather alerts, power outages, and emergency comms.', price: 'Rs. 3799.00', matchKeywords: ['weather radio', 'hand crank'] },
+  { icon: '🩹', reason: '🧰 Household Safety Baseline', tag: '#f97316', reasonBg: '#fff7ed', name: 'Professional 326-Piece First Aid Kit', desc: 'Comprehensive first-aid coverage for everyday and emergency response.', price: 'Rs. 3999.00', matchKeywords: ['326-piece first aid kit', 'first aid kit'] },
 ]
 
 const alerts = [
@@ -372,7 +372,7 @@ export default function CRMPersonalizationPage() {
           <div style={{ background: '#fff', borderRadius: '20px', padding: '28px', boxShadow: '0 4px 20px rgba(0,0,0,.08)' }}>
             <h3 style={{ fontSize: '17px', fontWeight: '700', marginBottom: '20px' }}>📈 CRM Analytics Impact</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
-              {[['3.4×','Higher CTR on recommendations'],['62%','Customers complete profile'],['$127','Avg order (profiled customers)'],['78%','2nd purchase rate (profiled)']].map(([v,l]) => (
+              {[['3.4×','Higher CTR on recommendations'],['62%','Customers complete profile'],['Rs. 127','Avg order (profiled customers)'],['78%','2nd purchase rate (profiled)']].map(([v,l]) => (
                 <div key={l} style={{ background: '#f8fafc', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
                   <div style={{ fontSize: '26px', fontWeight: '800', color: '#dc2626' }}>{v}</div>
                   <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>{l}</div>

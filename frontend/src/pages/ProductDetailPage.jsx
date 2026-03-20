@@ -29,6 +29,7 @@ export default function ProductDetailPage() {
   if (!product) return <div style={{ textAlign: 'center', padding: '80px', color: '#64748b' }}>Loading...</div>
 
   const color = categoryColors[product.category] || '#dc2626'
+  const formatINR = (value) => `Rs. ${Number(value).toFixed(2)}`
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '32px 24px' }}>
@@ -50,7 +51,7 @@ export default function ProductDetailPage() {
               <span style={{ color: '#f59e0b' }}>⭐ {product.rating}</span>
               <span style={{ color: '#64748b', fontSize: '14px' }}>({product.numReviews} reviews)</span>
             </div>
-            <div style={{ fontSize: '36px', fontWeight: '800', color: '#dc2626', marginBottom: '16px' }}>${product.price.toFixed(2)}</div>
+            <div style={{ fontSize: '36px', fontWeight: '800', color: '#dc2626', marginBottom: '16px' }}>{formatINR(product.price)}</div>
             <p style={{ color: '#475569', lineHeight: '1.7', marginBottom: '24px', fontSize: '15px' }}>{product.description}</p>
 
             <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '16px', marginBottom: '24px' }}>

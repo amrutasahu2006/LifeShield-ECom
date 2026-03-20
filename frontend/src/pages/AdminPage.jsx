@@ -239,7 +239,7 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
                     <div className="metric-icon" style={{ background: '#dcfce7', color: '#16a34a' }}><FiDollarSign /></div>
                     <div>
                       <div style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Revenue</div>
-                      <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#0f172a' }}>${totalRevenue.toFixed(2)}</div>
+                      <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#0f172a' }}>Rs. {totalRevenue.toFixed(2)}</div>
                     </div>
                   </div>
 
@@ -281,7 +281,7 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
                         <div key={o._id} style={{ padding: '1rem 0', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div>
                             <div style={{ fontWeight: '600', color: '#1e293b' }}>#{o._id.slice(-6).toUpperCase()}</div>
-                            <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{o.items.length} items • ${o.totalPrice.toFixed(2)}</div>
+                            <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{o.items.length} items • Rs. {o.totalPrice.toFixed(2)}</div>
                           </div>
                           <span style={{ fontSize: '0.8rem', padding: '4px 8px', borderRadius: '999px', background: o.status === 'processing' ? '#fef3c7' : '#f1f5f9', color: o.status === 'processing' ? '#d97706' : '#475569', fontWeight: '600', textTransform: 'capitalize' }}>{o.status}</span>
                         </div>
@@ -364,7 +364,7 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
                           <div style={{ fontSize: '0.85rem', color: '#334155', fontWeight: '500' }}>{p.category}</div>
                           <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{p.brand}</div>
                         </td>
-                        <td style={{ fontWeight: '700', color: '#0f172a', fontSize: '0.95rem' }}>${p.price.toFixed(2)}</td>
+                        <td style={{ fontWeight: '700', color: '#0f172a', fontSize: '0.95rem' }}>Rs. {p.price.toFixed(2)}</td>
                         <td>
                           <div className="status-badge" style={{ background: status.bg, color: status.color }}>
                             {status.label} ({p.stock})
@@ -421,7 +421,7 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
                             <span style={{ fontWeight: '500', color: '#334155', fontSize: '0.9rem' }}>{o.user?.name || 'Guest User'}</span>
                           </div>
                         </td>
-                        <td style={{ fontWeight: '700', color: '#0f172a' }}>${o.totalPrice.toFixed(2)}</td>
+                        <td style={{ fontWeight: '700', color: '#0f172a' }}>Rs. {o.totalPrice.toFixed(2)}</td>
                         <td style={{ color: '#64748b', fontSize: '0.85rem' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <FiClock size={12} />
@@ -483,7 +483,7 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Price ($)</label>
+                    <label className="form-label">Price (Rs.)</label>
                     <input type="number" step="0.01" className="form-input" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} required placeholder="0.00" />
                   </div>
 

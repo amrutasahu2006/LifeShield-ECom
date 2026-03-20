@@ -5,6 +5,7 @@ export default function OrderSuccessPage() {
   const { state } = useLocation()
   const orderId = state?.orderId || 'N/A'
   const total = state?.total || 0
+  const formatINR = (value) => `Rs. ${Number(value).toFixed(2)}`
 
   return (
     <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', background: '#f8fafc' }}>
@@ -15,7 +16,7 @@ export default function OrderSuccessPage() {
           Thank you for your purchase. Your safety products are being prepared for shipment.
         </p>
         <div style={{ background: '#f8fafc', borderRadius: '16px', padding: '24px', marginBottom: '32px' }}>
-          {[['Order ID', `#${orderId.toString().slice(-8).toUpperCase()}`], ['Total Paid', `$${total.toFixed(2)}`], ['Status', 'Confirmed ✓']].map(([l, v]) => (
+          {[['Order ID', `#${orderId.toString().slice(-8).toUpperCase()}`], ['Total Paid', formatINR(total)], ['Status', 'Confirmed ✓']].map(([l, v]) => (
             <div key={l} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
               <span style={{ color: '#64748b', fontSize: '14px' }}>{l}</span>
               <span style={{ fontWeight: '700', fontSize: l === 'Total Paid' ? '18px' : '14px', color: l === 'Total Paid' ? '#dc2626' : l === 'Status' ? '#16a34a' : '#1e293b' }}>{v}</span>

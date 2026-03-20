@@ -50,6 +50,14 @@ export const orderAPI = {
   getById: (id) => API.get(`/orders/${id}`),
 }
 
+export const paymentAPI = {
+  createRazorpayOrder: (amount) => API.post('/payment/create-order', { amount }),
+  verifyPayment: (data) => API.post('/payment/verify', data),
+}
+
+export const createRazorpayOrder = (amount) => paymentAPI.createRazorpayOrder(amount)
+export const verifyPayment = (data) => paymentAPI.verifyPayment(data)
+
 export const adminAPI = {
   createProduct: (data) => API.post('/admin/products', data),
   updateProduct: (id, data) => API.put(`/admin/products/${id}`, data),
