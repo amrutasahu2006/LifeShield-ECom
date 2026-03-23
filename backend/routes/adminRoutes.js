@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { createProduct, updateProduct, deleteProduct, getLowStockProducts } = require('../controllers/productController');
 const { getAllOrders, updateOrderStatus } = require('../controllers/orderController');
-const { getDashboardStats } = require('../controllers/adminController');
+const { getDashboardStats, createTier, updateTier, deleteTier, createReward, updateReward, deleteReward } = require('../controllers/adminController');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
 const User = require('../models/User');
 const InventoryAlert = require('../models/InventoryAlert');
@@ -56,5 +56,14 @@ router.get('/users', async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+
+// CRM Settings
+router.post('/crm/tiers', createTier);
+router.put('/crm/tiers/:id', updateTier);
+router.delete('/crm/tiers/:id', deleteTier);
+
+router.post('/crm/rewards', createReward);
+router.put('/crm/rewards/:id', updateReward);
+router.delete('/crm/rewards/:id', deleteReward);
 
 module.exports = router;

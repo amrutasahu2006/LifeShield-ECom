@@ -1,7 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/authMiddleware');
-const { getDashboard, redeemReward } = require('../controllers/loyaltyController');
+const { getDashboard, redeemReward, getTiers, getRewards } = require('../controllers/loyaltyController');
+
+router.get('/tiers', getTiers);
+router.get('/rewards', getRewards);
 
 router.use(protect);
 

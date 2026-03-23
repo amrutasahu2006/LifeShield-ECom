@@ -47,7 +47,12 @@ export default function CartPage() {
                 <div style={{ flex: 1 }}>
                   <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '4px', color: '#1e293b' }}>{item.product?.name}</h3>
                   <p style={{ color: '#64748b', fontSize: '13px' }}>{item.product?.category}</p>
-                  <p style={{ color: '#dc2626', fontWeight: '700', fontSize: '16px', marginTop: '4px' }}>{formatINR(item.price || 0)}</p>
+                  {item.customComponents && item.customComponents.length > 0 && (
+                    <ul style={{ margin: '8px 0 0 0', paddingLeft: '16px', fontSize: '12px', color: '#475569' }}>
+                      {item.customComponents.map((c, i) => <li key={i} style={{ marginBottom: '2px' }}>{c}</li>)}
+                    </ul>
+                  )}
+                  <p style={{ color: '#dc2626', fontWeight: '700', fontSize: '16px', marginTop: '6px' }}>{formatINR(item.price || 0)}</p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
                   <button onClick={() => updateItem(item._id, item.quantity - 1)} style={{ padding: '6px 12px', background: '#f1f5f9', fontWeight: '700', fontSize: '16px', border: 'none', cursor: 'pointer' }}>-</button>

@@ -1,5 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import { productAPI } from '../utils/api'
 
 const surveyStats = [
   { pct: '76%', color: '#dc2626', label: 'No Preparedness Score', desc: "Consumers don't know if they're actually prepared" },
@@ -43,12 +45,39 @@ const usps = [
 
 export default function UniquenessPage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [activeFeature, setActiveFeature] = useState(0)
+  const [products, setProducts] = useState([])
+
+  useEffect(() => {
+    productAPI.getAll({ limit: 50 }).then(res => setProducts(res.data.products)).catch(console.error)
+  }, [])
+
+  // Safely extract user fields or default to generic persona
+  const uRegion = user?.safetyProfile?.region || 'California (High Wildfire + Earthquake Risk)'
+  const uSize = user?.safetyProfile?.householdSize || 'Family of 4'
+  const uPoints = user?.loyaltyPoints || 0
+  const uTier = uPoints >= 5000 ? 'Platinum' : uPoints >= 1000 ? 'Gold' : 'Bronze'
+  const ptsNext = uTier === 'Platinum' ? 0 : uTier === 'Gold' ? 5000 - uPoints : 1000 - uPoints
+  const nextTier = uTier === 'Platinum' ? 'Max Tier' : uTier === 'Gold' ? '💎 Platinum' : '🥇 Gold'
+
+  // Extract products dynamically
+  const getStock = (nameQuery, fallback) => {
+    if (!products || products.length === 0) return fallback
+    const p = products.find(prod => prod.name.toLowerCase().includes(nameQuery.toLowerCase()))
+    return p ? p.stock : fallback
+  }
+
+  const kitStock = getStock('72-Hour', 6)
+  const faStock = getStock('First Aid', 85)
+  const waterStock = getStock('Water Filter', 28)
+  const fireStock = getStock('Extinguisher', 60)
+
   const features = [
-    { label: '🧠 Preparedness Score', title: 'Preparedness Score: 68/100', body: 'Your household profile (Family of 4, California, Wildfire Risk) has been analyzed. You are missing critical items: a 72-Hour Kit, Pet Evacuation supplies, and a Water Filter. Here is your personalized shopping list to reach 90+/100.', gaps: [['🎒 Emergency Kits','40%','#dc2626'],['💧 Water Supply','45%','#dc2626'],['🩺 First Aid','85%','#16a34a'],['🔥 Fire Safety','60%','#f97316']] },
-    { label: '🏆 ShieldPoints™', title: 'ShieldPoints™ Active — Gold Member', body: 'You have earned 2,340 points. You are 2,660 points from Platinum status. Redeem points for free products, coupons, CPR courses, or a dedicated Safety Advisor session.', gaps: [['Points Balance','2,340 pts','#dc2626'],['Current Tier','🥇 Gold','#f59e0b'],['Next Tier','💎 Platinum','#7c3aed'],['Points to Go','2,660 pts','#64748b']] },
-    { label: '🔔 Seasonal Alerts', title: 'Active Alerts for California', body: 'Wildfire Season is approaching (June–September). Based on your location and household profile, we recommend stocking up on Fire Safety Equipment and refreshing your 72-Hour Kit before the season starts.', gaps: [['Wildfire Risk','HIGH ⚠️','#dc2626'],['Hurricane Risk','Low','#16a34a'],['Winter Storm','Medium','#f97316'],['Alert Active','Jun–Sep 2025','#3b82f6']] },
-    { label: '📦 Live SCM', title: 'Stock Dashboard — Live', body: 'See real-time inventory levels before you order. 72-Hour Kits are critically low (6 units). A purchase order has been auto-triggered to our Tier-1 supplier. Stock expected Jan 8, 2025.', gaps: [['72-Hr Kit','6 units ⚠️','#dc2626'],['First Aid Kit','85 units ✓','#16a34a'],['Water Filter','28 units 〜','#d97706'],['Fire Ext.','60 units ✓','#16a34a']] },
+    { label: '🧠 Preparedness Score', title: 'Preparedness Score: 68/100', body: `Your household profile (${uSize}, ${uRegion}) has been analyzed. You are missing critical items: a 72-Hour Kit, Pet Evacuation supplies, and a Water Filter. Here is your personalized shopping list to reach 90+/100.`, gaps: [['🎒 Emergency Kits','40%','#dc2626'],['💧 Water Supply','45%','#dc2626'],['🩺 First Aid','85%','#16a34a'],['🔥 Fire Safety','60%','#f97316']] },
+    { label: '🏆 ShieldPoints™', title: `ShieldPoints™ Active — ${uTier} Member`, body: `You have earned ${uPoints.toLocaleString()} points. You are ${ptsNext.toLocaleString()} points from ${nextTier.replace(/[^a-zA-Z]/g, '').trim()} status. Redeem points for free products, coupons, CPR courses, or a dedicated Safety Advisor session.`, gaps: [['Points Balance',`${uPoints.toLocaleString()} pts`,'#dc2626'],['Current Tier',`${uTier === 'Platinum' ? '💎 Platinum' : uTier === 'Gold' ? '🥇 Gold' : '🥉 Bronze'}`,'#f59e0b'],['Next Tier', nextTier,'#7c3aed'],['Points to Go',`${ptsNext.toLocaleString()} pts`,'#64748b']] },
+    { label: '🔔 Seasonal Alerts', title: `Active Alerts for ${uRegion.split(' ')[0] || 'your area'}`, body: `Wildfire Season is approaching (June–September). Based on your location (${uRegion}) and household profile, we recommend stocking up on Fire Safety Equipment and refreshing your 72-Hour Kit before the season starts.`, gaps: [['Wildfire Risk','HIGH ⚠️','#dc2626'],['Hurricane Risk','Low','#16a34a'],['Winter Storm','Medium','#f97316'],['Alert Active','Jun–Sep 2025','#3b82f6']] },
+    { label: '📦 Live SCM', title: 'Stock Dashboard — Live', body: `See real-time inventory levels before you order. ${kitStock < 10 ? `72-Hour Kits are critically low (${kitStock} units). A purchase order has been auto-triggered.` : `We have adequate stock ready for dispatch.`}`, gaps: [['72-Hr Kit',`${kitStock} units ${kitStock < 10 ? '⚠️' : '✓'}`,`${kitStock < 10 ? '#dc2626' : '#16a34a'}`],['First Aid Kit',`${faStock} units ${faStock < 20 ? '〜' : '✓'}`,`${faStock < 20 ? '#d97706' : '#16a34a'}`],['Water Filter',`${waterStock} units ${waterStock < 20 ? '〜' : '✓'}`,`${waterStock < 20 ? '#d97706' : '#16a34a'}`],['Fire Ext.',`${fireStock} units ${fireStock < 20 ? '〜' : '✓'}`,`${fireStock < 20 ? '#d97706' : '#16a34a'}`]] },
   ]
   const detailRoutes = ['/safety-profile', '/loyalty', '/safety-profile', '/scm-dashboard']
   const f = features[activeFeature]

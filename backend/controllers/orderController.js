@@ -137,7 +137,8 @@ exports.createOrder = async (req, res) => {
       name: item.product.name,
       quantity: item.quantity,
       price: item.price,
-      image: item.product.image
+      image: item.product.image,
+      customComponents: item.customComponents || []
     }));
 
     const itemsPrice = cart.totalAmount;

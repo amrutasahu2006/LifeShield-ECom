@@ -12,7 +12,7 @@ exports.getCart = async (req, res) => {
 };
 
 exports.addToCart = async (req, res) => {
-  const { productId, quantity = 1 } = req.body;
+  const { productId, quantity = 1, customComponents, customPrice } = req.body;
   try {
     const requestedQty = Number(quantity);
     if (!Number.isFinite(requestedQty) || requestedQty <= 0) {
@@ -30,7 +30,14 @@ exports.addToCart = async (req, res) => {
     let cart = await Cart.findOne({ user: req.user._id });
     if (!cart) cart = new Cart({ user: req.user._id, items: [] });
 
-    const existingIndex = cart.items.findIndex(i => i.product.toString() === productId);
+    const isCustom = Array.isArray(customComponents) && customComponents.length > 0;
+    const finalPrice = isCustom && customPrice ? Number(customPrice) : product.price;
+
+    const existingIndex = cart.items.findIndex(i => 
+      i.product.toString() === productId && 
+      JSON.stringify(i.customComponents || []) === JSON.stringify(customComponents || [])
+    );
+
     if (existingIndex >= 0) {
       const nextQuantity = cart.items[existingIndex].quantity + Math.floor(requestedQty);
       if (nextQuantity > availableStock) {
@@ -38,7 +45,12 @@ exports.addToCart = async (req, res) => {
       }
       cart.items[existingIndex].quantity = nextQuantity;
     } else {
-      cart.items.push({ product: productId, quantity: Math.floor(requestedQty), price: product.price });
+      cart.items.push({ 
+        product: productId, 
+        quantity: Math.floor(requestedQty), 
+        price: finalPrice,
+        ...(isCustom && { customComponents }) 
+      });
     }
     cart.calculateTotal();
     await cart.save();

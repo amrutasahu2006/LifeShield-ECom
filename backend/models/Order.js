@@ -5,7 +5,8 @@ const orderItemSchema = new mongoose.Schema({
   name: String,
   quantity: { type: Number, required: true },
   price: { type: Number, required: true },
-  image: String
+  image: String,
+  customComponents: [{ type: String }]
 });
 
 const orderSchema = new mongoose.Schema({

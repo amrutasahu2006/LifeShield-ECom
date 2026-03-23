@@ -3,28 +3,12 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { loyaltyAPI } from '../utils/api'
 
-const tiers = [
-  { name: 'Bronze', icon: '🥉', color: '#cd7f32', bg: '#cd7f3215', range: '0 – 499 Points', pct: '1%', label: 'Points per Rs. 1', perks: ['Birthday bonus points (50 pts)', 'Member-only email alerts', 'Early access to sales', 'Free shipping over Rs. 75'], goal: 'Onboard & Activate' },
-  { name: 'Silver', icon: '🥈', color: '#9ca3af', bg: '#9ca3af15', range: '500 – 1,499 Points', pct: '2%', label: 'Points per Rs. 1', perks: ['All Bronze benefits', 'Free shipping over Rs. 50', 'Priority customer support', 'Quarterly safety newsletter'], goal: 'Increase Frequency' },
-  { name: 'Gold', icon: '🥇', color: '#f59e0b', bg: '#f59e0b15', range: '1,500 – 4,999 Points', pct: '3%', label: 'Points per Rs. 1', perks: ['All Silver benefits', 'Always free shipping', 'Exclusive Gold-only products', 'Emergency prep webinars (free)'], goal: 'Maximize Spend', popular: true },
-  { name: 'Platinum', icon: '💎', color: '#7c3aed', bg: '#7c3aed15', range: '5,000+ Points', pct: '5%', label: 'Points per Rs. 1', perks: ['All Gold benefits', 'Dedicated Safety Advisor', 'Priority 24hr shipping', 'Annual home safety audit'], goal: 'Lock In & Upsell' },
-]
-
 const activity = [
   { icon: '🛒', bg: '#dcfce7', title: 'Purchase – 72-Hour Emergency Kit', date: 'Dec 28, 2024 · Order #A3F2B9', pts: '+149 pts', earn: true },
   { icon: '🛒', bg: '#dcfce7', title: 'Purchase – First Aid Kit (326-Piece)', date: 'Dec 15, 2024 · Order #A1D8F5', pts: '+49 pts', earn: true },
   { icon: '🎁', bg: '#fee2e2', title: 'Redeemed – Rs. 5 Discount Coupon', date: 'Dec 10, 2024', pts: '−500 pts', earn: false },
   { icon: '🎂', bg: '#dbeafe', title: 'Birthday Bonus', date: 'Nov 5, 2024 · Annual Gift', pts: '+50 pts', earn: true },
   { icon: '🛒', bg: '#dcfce7', title: 'Purchase – Smoke & CO Detector', date: 'Oct 20, 2024 · Order #A9C1E4', pts: '+54 pts', earn: true },
-]
-
-const rewards = [
-  { icon: '💰', name: 'Rs. 5 Off Coupon', points: 500 },
-  { icon: '🚚', name: 'Free Expedited Shipping', points: 300 },
-  { icon: '🩺', name: 'Travel First Aid Kit (Free)', points: 2500 },
-  { icon: '📋', name: 'Home Safety Checklist PDF', points: 100 },
-  { icon: '🎓', name: 'CPR Basics Online Course', points: 1000 },
-  { icon: '💎', name: 'Upgrade to Platinum (1 mo)', points: 4000 },
 ]
 
 export default function CRMLoyaltyPage() {
@@ -35,6 +19,21 @@ export default function CRMLoyaltyPage() {
   const [redeeming, setRedeeming] = useState(null)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [tiers, setTiers] = useState([])
+  const [rewards, setRewards] = useState([])
+
+  useEffect(() => {
+    const loadContent = async () => {
+      try {
+        const [t, r] = await Promise.all([ loyaltyAPI.getTiers(), loyaltyAPI.getRewards() ])
+        setTiers(t.data)
+        setRewards(r.data)
+      } catch (err) {
+        console.error('Failed to load CRM elements:', err)
+      }
+    }
+    loadContent()
+  }, [])
 
   const loadDashboard = async () => {
     if (!user) {

@@ -19,6 +19,7 @@ import CRMLoyaltyPage from './pages/CRMLoyaltyPage'
 import CRMPersonalizationPage from './pages/CRMPersonalizationPage'
 import SCMDemandPage from './pages/SCMDemandPage'
 import UniquenessPage from './pages/UniquenessPage'
+import BuildKitPage from './pages/BuildKitPage'
 
 const ProtectedRoute = ({ children }) => {
   const { user, isAdmin } = useAuth()
@@ -61,10 +62,12 @@ function AppContent() {
           <Route path="/admin" element={<AdminRoute><AdminPage activeTab="dashboard" /></AdminRoute>} />
           <Route path="/admin/products" element={<AdminRoute><AdminPage activeTab="products" /></AdminRoute>} />
           <Route path="/admin/orders" element={<AdminRoute><AdminPage activeTab="orders" /></AdminRoute>} />
+          <Route path="/admin/crm" element={<AdminRoute><AdminPage activeTab="crm" /></AdminRoute>} />
           <Route path="/loyalty" element={<UserRoute><CRMLoyaltyPage /></UserRoute>} />
           <Route path="/safety-profile" element={<UserRoute><CRMPersonalizationPage /></UserRoute>} />
           <Route path="/scm-dashboard" element={<UserRoute><SCMDemandPage /></UserRoute>} />
           <Route path="/why-us" element={<UserRoute><UniquenessPage /></UserRoute>} />
+          <Route path="/build-kit" element={<UserRoute><BuildKitPage /></UserRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

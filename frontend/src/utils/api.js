@@ -38,6 +38,7 @@ export const productAPI = {
   getAll: (params) => API.get('/products', { params }),
   getFeatured: () => API.get('/products/featured'),
   getById: (id) => API.get(`/products/${id}`),
+  getScmTransparency: () => API.get('/products/scm-transparency'),
 }
 
 export const cartAPI = {
@@ -73,11 +74,19 @@ export const adminAPI = {
   getUsers: () => API.get('/admin/users'),
   getAlerts: () => API.get('/admin/alerts'),
   markAlertRead: (id) => API.put(`/admin/alerts/${id}/read`),
+  createTier: (data) => API.post('/admin/crm/tiers', data),
+  updateTier: (id, data) => API.put(`/admin/crm/tiers/${id}`, data),
+  deleteTier: (id) => API.delete(`/admin/crm/tiers/${id}`),
+  createReward: (data) => API.post('/admin/crm/rewards', data),
+  updateReward: (id, data) => API.put(`/admin/crm/rewards/${id}`, data),
+  deleteReward: (id) => API.delete(`/admin/crm/rewards/${id}`),
 }
 
 export const loyaltyAPI = {
   getDashboard: () => API.get('/loyalty/dashboard'),
   redeemReward: (rewardName) => API.post('/loyalty/redeem', { rewardName }),
+  getTiers: () => API.get('/loyalty/tiers'),
+  getRewards: () => API.get('/loyalty/rewards'),
 }
 
 export default API

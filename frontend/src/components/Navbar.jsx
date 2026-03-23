@@ -30,6 +30,7 @@ export default function Navbar() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flexWrap: 'wrap' }}>
           <Link to="/" style={linkStyle}>Home</Link>
           <Link to="/products" style={linkStyle}>Products</Link>
+          <Link to="/build-kit" style={{ ...linkStyle, background: '#4338ca', color: '#fff', marginLeft: '6px' }}>Build Custom Kit</Link>
 
           {/* Strategy Dropdown */}
           <div style={{ position: 'relative' }} onMouseEnter={() => setStrategyOpen(true)} onMouseLeave={() => setStrategyOpen(false)}>

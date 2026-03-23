@@ -1,4 +1,6 @@
 const Order = require('../models/Order');
+const Tier = require('../models/Tier');
+const Reward = require('../models/Reward');
 
 exports.getDashboardStats = async (req, res) => {
   try {
@@ -69,6 +71,62 @@ exports.getDashboardStats = async (req, res) => {
       })),
       topSellingProducts
     });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// CRM Tiers CRUD
+exports.createTier = async (req, res) => {
+  try {
+    const tier = await Tier.create(req.body);
+    res.status(201).json(tier);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+exports.updateTier = async (req, res) => {
+  try {
+    const tier = await Tier.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!tier) return res.status(404).json({ message: 'Tier not found' });
+    res.json(tier);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+exports.deleteTier = async (req, res) => {
+  try {
+    const tier = await Tier.findByIdAndDelete(req.params.id);
+    if (!tier) return res.status(404).json({ message: 'Tier not found' });
+    res.json({ message: 'Tier removed' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// CRM Rewards CRUD
+exports.createReward = async (req, res) => {
+  try {
+    const reward = await Reward.create(req.body);
+    res.status(201).json(reward);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+exports.updateReward = async (req, res) => {
+  try {
+    const reward = await Reward.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    if (!reward) return res.status(404).json({ message: 'Reward not found' });
+    res.json(reward);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+exports.deleteReward = async (req, res) => {
+  try {
+    const reward = await Reward.findByIdAndDelete(req.params.id);
+    if (!reward) return res.status(404).json({ message: 'Reward not found' });
+    res.json({ message: 'Reward removed' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

@@ -57,6 +57,9 @@ export default function AdminNavbar() {
                         <Link to="/admin/orders" style={{ ...linkStyle, height: '100%', borderRadius: 0, borderBottom: currentPath === '/admin/orders' ? '3px solid #60a5fa' : '3px solid transparent', color: currentPath === '/admin/orders' ? '#fff' : '#cbd5e1', marginLeft: '8px' }}>
                             <FiShoppingCart size={18} /> Orders
                         </Link>
+                        <Link to="/admin/crm" style={{ ...linkStyle, height: '100%', borderRadius: 0, borderBottom: currentPath === '/admin/crm' ? '3px solid #60a5fa' : '3px solid transparent', color: currentPath === '/admin/crm' ? '#fff' : '#cbd5e1', marginLeft: '8px' }}>
+                            <FiSettings size={18} /> CRM Settings
+                        </Link>
                     </div>
 
                     <button

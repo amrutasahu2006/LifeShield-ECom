@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { productAPI, adminAPI } from '../utils/api'
-import { FiBox, FiShoppingCart, FiPlus, FiEdit2, FiTrash2, FiX, FiCheckCircle, FiPackage, FiTruck, FiClock, FiStar, FiSearch, FiActivity, FiDollarSign, FiAlertCircle, FiClipboard } from 'react-icons/fi'
+import { productAPI, adminAPI, loyaltyAPI } from '../utils/api'
+import { FiBox, FiShoppingCart, FiPlus, FiEdit2, FiTrash2, FiX, FiCheckCircle, FiPackage, FiTruck, FiClock, FiStar, FiSearch, FiActivity, FiDollarSign, FiAlertCircle, FiClipboard, FiSettings, FiAward } from 'react-icons/fi'
 
 import { useNavigate } from 'react-router-dom'
 
@@ -23,7 +23,12 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [dashboardRefreshing, setDashboardRefreshing] = useState(false)
-
+  const [tiers, setTiers] = useState([])
+  const [rewards, setRewards] = useState([])
+  const [showCrmModal, setShowCrmModal] = useState(false)
+  const [crmType, setCrmType] = useState('reward') // 'tier' | 'reward'
+  const [crmForm, setCrmForm] = useState({})
+  
   const loadProducts = () => productAPI.getAll({ limit: 100 }).then(r => setProducts(r.data.products))
   const loadOrders = () => adminAPI.getAllOrders().then(r => setOrders(r.data))
   const loadStats = () => {
@@ -39,6 +44,10 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
   }
   const loadAlerts = () => adminAPI.getAlerts().then(r => setAlerts(r.data)).catch(() => setAlerts([]))
   const loadLowStock = () => adminAPI.getLowStockProducts().then(r => setLowStockProducts(r.data)).catch(() => setLowStockProducts([]))
+  const loadCRM = () => {
+    loyaltyAPI.getTiers().then(r => setTiers(r.data)).catch(console.error)
+    loyaltyAPI.getRewards().then(r => setRewards(r.data)).catch(console.error)
+  }
 
   const refreshDashboardData = async () => {
     setDashboardRefreshing(true)
@@ -49,7 +58,7 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
     }
   }
 
-  useEffect(() => { loadProducts(); loadOrders(); loadStats(); loadAlerts(); loadLowStock() }, [])
+  useEffect(() => { loadProducts(); loadOrders(); loadStats(); loadAlerts(); loadLowStock(); loadCRM() }, [])
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -84,6 +93,31 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
       loadLowStock()
       showMessage('Product deleted successfully')
     } catch (err) { showMessage('Failed to delete product', 'error') }
+  }
+
+  const handleCrmSubmit = async (e) => {
+    e.preventDefault()
+    try {
+      if (crmType === 'tier') {
+        if (crmForm._id) await adminAPI.updateTier(crmForm._id, { ...crmForm, perks: typeof crmForm.perks === 'string' ? crmForm.perks.split(',').map(s=>s.trim()) : crmForm.perks })
+        else await adminAPI.createTier({ ...crmForm, perks: typeof crmForm.perks === 'string' ? crmForm.perks.split(',').map(s=>s.trim()) : crmForm.perks })
+      } else {
+        if (crmForm._id) await adminAPI.updateReward(crmForm._id, crmForm)
+        else await adminAPI.createReward(crmForm)
+      }
+      showMessage(`CRM ${crmType} saved successfully!`)
+      setShowCrmModal(false)
+      loadCRM()
+    } catch (err) { showMessage(err.response?.data?.message || 'Save failed', 'error') }
+  }
+  const deleteCrm = async (type, id) => {
+    if (!window.confirm(`Delete this ${type}?`)) return
+    try {
+      if (type === 'tier') await adminAPI.deleteTier(id)
+      else await adminAPI.deleteReward(id)
+      loadCRM()
+      showMessage('Deleted successfully')
+    } catch (err) { showMessage('Delete failed', 'error') }
   }
 
   const filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -266,6 +300,17 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
               >
                 <FiPlus size={18} /> Add Product
               </button>
+            )}
+
+            {activeTab === 'crm' && (
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button onClick={() => { setCrmType('tier'); setCrmForm({ name: '', icon: '🌟', color: '#000', bg: '#fff', range: '', minPoints: 0, pct: '1%', label: '', perks: [], goal: '', popular: false }); setShowCrmModal(true) }} className="btn-primary" style={{ background: '#7c3aed' }}>
+                  <FiPlus size={18} /> Add Tier
+                </button>
+                <button onClick={() => { setCrmType('reward'); setCrmForm({ name: '', icon: '🎁', points: 0 }); setShowCrmModal(true) }} className="btn-primary" style={{ background: '#10b981' }}>
+                  <FiPlus size={18} /> Add Reward
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -564,6 +609,59 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
                 </tbody>
               </table>
             )}
+
+            {activeTab === 'crm' && (
+              <div style={{ padding: '2rem' }}>
+                <div style={{ marginBottom: '3rem' }}>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '1rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}><FiAward color="#7c3aed" /> Loyalty Tiers</h3>
+                  {tiers.length === 0 ? <p style={{ color: '#64748b' }}>No tiers found.</p> : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                      {tiers.map(t => (
+                        <div key={t._id} style={{ background: t.bg, border: `1px solid ${t.color}40`, borderRadius: '16px', padding: '1.5rem', position: 'relative' }}>
+                          <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '0.5rem' }}>
+                            <button onClick={() => { setCrmType('tier'); setCrmForm({ ...t, perks: t.perks.join(', ') }); setShowCrmModal(true) }} className="btn-action btn-action-edit" style={{ background: '#fff' }}><FiEdit2 size={14} /></button>
+                            <button onClick={() => deleteCrm('tier', t._id)} className="btn-action btn-action-delete" style={{ background: '#fff' }}><FiTrash2 size={14} /></button>
+                          </div>
+                          <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>{t.icon}</div>
+                          <h4 style={{ fontSize: '1.2rem', fontWeight: '800', color: t.color, margin: '0 0 0.25rem 0' }}>{t.name}</h4>
+                          <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '600', marginBottom: '1rem' }}>{t.range} (Min: {t.minPoints})</div>
+                          <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            {t.perks.slice(0, 3).map((p, i) => <li key={i} style={{ fontSize: '0.85rem', color: '#334155', display: 'flex', gap: '6px' }}><span style={{ color: t.color }}>✓</span> {p}</li>)}
+                            {t.perks.length > 3 && <li style={{ fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>+ {t.perks.length - 3} more</li>}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '1rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}><FiPackage color="#10b981" /> Redeemable Rewards</h3>
+                  {rewards.length === 0 ? <p style={{ color: '#64748b' }}>No rewards found.</p> : (
+                    <table className="premium-table" style={{ background: '#fff', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                      <thead><tr><th>Reward</th><th>Points Required</th><th style={{ textAlign: 'right' }}>Actions</th></tr></thead>
+                      <tbody>
+                        {rewards.map(r => (
+                          <tr key={r._id}>
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ fontSize: '1.5rem', background: '#f8fafc', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px' }}>{r.icon}</div>
+                                <div style={{ fontWeight: '600', color: '#1e293b' }}>{r.name}</div>
+                              </div>
+                            </td>
+                            <td style={{ fontWeight: '700', color: '#0f172a' }}>{r.points} pts</td>
+                            <td style={{ textAlign: 'right' }}>
+                              <button onClick={() => { setCrmType('reward'); setCrmForm(r); setShowCrmModal(true) }} className="btn-action btn-action-edit" title="Edit"><FiEdit2 size={16} /></button>
+                              <button onClick={() => deleteCrm('reward', r._id)} className="btn-action btn-action-delete" title="Delete" style={{ marginLeft: '4px' }}><FiTrash2 size={16} /></button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -645,6 +743,61 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem', borderTop: '1px solid #f1f5f9', paddingTop: '1.5rem' }}>
                   <button type="button" onClick={() => setShowForm(false)} className="form-input" style={{ flex: 1, background: '#f8fafc', fontWeight: '600', cursor: 'pointer', textAlign: 'center' }}>Cancel</button>
                   <button type="submit" className="btn-primary" style={{ flex: 1, justifyContent: 'center', borderRadius: '0.5rem' }}>{editId ? 'Save Changes' : 'Publish Product'}</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* CRM Modal */}
+        {showCrmModal && (
+          <div className="modal-backdrop">
+            <div className="modal-content" style={{ maxWidth: '500px' }}>
+              <div className="modal-header">
+                <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '700', color: '#0f172a' }}>
+                  {crmForm._id ? `Edit ${crmType === 'tier' ? 'Tier' : 'Reward'}` : `Create New ${crmType === 'tier' ? 'Tier' : 'Reward'}`}
+                </h2>
+                <button onClick={() => setShowCrmModal(false)} className="btn-action" style={{ background: '#f1f5f9' }}><FiX size={20} color="#64748b" /></button>
+              </div>
+              <form onSubmit={handleCrmSubmit} className="modal-body">
+                {crmType === 'tier' ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <div className="form-group"><label className="form-label">Tier Name</label><input type="text" className="form-input" required value={crmForm.name} onChange={e => setCrmForm({...crmForm, name: e.target.value})} placeholder="e.g. Diamond" /></div>
+                      <div className="form-group"><label className="form-label">Min Points</label><input type="number" className="form-input" required value={crmForm.minPoints} onChange={e => setCrmForm({...crmForm, minPoints: e.target.value})} placeholder="0" /></div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                      <div className="form-group"><label className="form-label">Icon</label><input type="text" className="form-input" required value={crmForm.icon} onChange={e => setCrmForm({...crmForm, icon: e.target.value})} placeholder="💎" /></div>
+                      <div className="form-group"><label className="form-label">Color</label><input type="text" className="form-input" required value={crmForm.color} onChange={e => setCrmForm({...crmForm, color: e.target.value})} placeholder="#000" /></div>
+                      <div className="form-group"><label className="form-label">Bg Color</label><input type="text" className="form-input" required value={crmForm.bg} onChange={e => setCrmForm({...crmForm, bg: e.target.value})} placeholder="#fff" /></div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <div className="form-group"><label className="form-label">Range Text</label><input type="text" className="form-input" required value={crmForm.range} onChange={e => setCrmForm({...crmForm, range: e.target.value})} placeholder="10,000+ Points" /></div>
+                      <div className="form-group"><label className="form-label">Goal Text</label><input type="text" className="form-input" required value={crmForm.goal} onChange={e => setCrmForm({...crmForm, goal: e.target.value})} placeholder="VIP Treatment" /></div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <div className="form-group"><label className="form-label">Pct Label (e.g. 5%)</label><input type="text" className="form-input" required value={crmForm.pct} onChange={e => setCrmForm({...crmForm, pct: e.target.value})} /></div>
+                      <div className="form-group"><label className="form-label">Desc Label</label><input type="text" className="form-input" required value={crmForm.label} onChange={e => setCrmForm({...crmForm, label: e.target.value})} placeholder="Points / Rs" /></div>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Perks (Comma Separated)</label>
+                      <textarea className="form-input" rows={3} required value={crmForm.perks} onChange={e => setCrmForm({...crmForm, perks: e.target.value})} placeholder="Free shipping, 24/7 Support"></textarea>
+                    </div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={crmForm.popular} onChange={e => setCrmForm({...crmForm, popular: e.target.checked})} style={{ width: '1.25rem', height: '1.25rem' }} />
+                      <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>Mark as Popular Tier</span>
+                    </label>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div className="form-group"><label className="form-label">Reward Name</label><input type="text" className="form-input" required value={crmForm.name} onChange={e => setCrmForm({...crmForm, name: e.target.value})} placeholder="Free Flashlight" /></div>
+                    <div className="form-group"><label className="form-label">Points Required</label><input type="number" className="form-input" required value={crmForm.points} onChange={e => setCrmForm({...crmForm, points: e.target.value})} placeholder="500" /></div>
+                    <div className="form-group"><label className="form-label">Emoji Icon</label><input type="text" className="form-input" required value={crmForm.icon} onChange={e => setCrmForm({...crmForm, icon: e.target.value})} placeholder="🔦" /></div>
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid #f1f5f9' }}>
+                  <button type="button" onClick={() => setShowCrmModal(false)} className="form-input" style={{ flex: 1, background: '#f8fafc', fontWeight: '600', cursor: 'pointer', textAlign: 'center' }}>Cancel</button>
+                  <button type="submit" className="btn-primary" style={{ flex: 1, justifyContent: 'center', borderRadius: '0.5rem' }}>Save {crmType === 'tier' ? 'Tier' : 'Reward'}</button>
                 </div>
               </form>
             </div>

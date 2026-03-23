@@ -5,6 +5,8 @@ dotenv.config({ override: true });
 
 const User = require('./models/User');
 const Product = require('./models/Product');
+const Tier = require('./models/Tier');
+const Reward = require('./models/Reward');
 
 const products = [
   {
@@ -111,7 +113,30 @@ const products = [
     price: 1499, category: 'Personal Safety Devices', stock: 180,
     image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400',
     featured: false, rating: 4.2, numReviews: 134, brand: 'SafeVis', sku: 'PSD-004'
+  },
+  {
+    name: 'Custom Emergency Kit (Made-to-Order)',
+    description: 'Build your own bespoke emergency kit. Select from high-quality medical supplies, survival tools, and rations to construct a kit perfectly tailored to your family\'s unique risk profile.',
+    price: 999, category: 'Disaster Preparedness Kits', stock: 999999,
+    image: 'https://images.unsplash.com/photo-1612831455740-a2f6cb179db4?w=400',
+    featured: true, rating: 5.0, numReviews: 142, brand: 'LifeShield Custom', sku: 'PULL-SCM-CUSTOM'
   }
+];
+
+const tiers = [
+  { name: 'Bronze', icon: '🥉', color: '#cd7f32', bg: '#cd7f3215', range: '0 – 499 Points', minPoints: 0, pct: '1%', label: 'Points per Rs. 1', perks: ['Birthday bonus points (50 pts)', 'Member-only email alerts', 'Early access to sales', 'Free shipping over Rs. 75'], goal: 'Onboard & Activate', popular: false },
+  { name: 'Silver', icon: '🥈', color: '#9ca3af', bg: '#9ca3af15', range: '500 – 1,499 Points', minPoints: 500, pct: '2%', label: 'Points per Rs. 1', perks: ['All Bronze benefits', 'Free shipping over Rs. 50', 'Priority customer support', 'Quarterly safety newsletter'], goal: 'Increase Frequency', popular: false },
+  { name: 'Gold', icon: '🥇', color: '#f59e0b', bg: '#f59e0b15', range: '1,500 – 4,999 Points', minPoints: 1500, pct: '3%', label: 'Points per Rs. 1', perks: ['All Silver benefits', 'Always free shipping', 'Exclusive Gold-only products', 'Emergency prep webinars (free)'], goal: 'Maximize Spend', popular: true },
+  { name: 'Platinum', icon: '💎', color: '#7c3aed', bg: '#7c3aed15', range: '5,000+ Points', minPoints: 5000, pct: '5%', label: 'Points per Rs. 1', perks: ['All Gold benefits', 'Dedicated Safety Advisor', 'Priority 24hr shipping', 'Annual home safety audit'], goal: 'Lock In & Upsell', popular: false }
+];
+
+const rewards = [
+  { icon: '💰', name: 'Rs. 5 Off Coupon', points: 500 },
+  { icon: '🚚', name: 'Free Expedited Shipping', points: 300 },
+  { icon: '🩺', name: 'Travel First Aid Kit (Free)', points: 2500 },
+  { icon: '📋', name: 'Home Safety Checklist PDF', points: 100 },
+  { icon: '🎓', name: 'CPR Basics Online Course', points: 1000 },
+  { icon: '💎', name: 'Upgrade to Platinum (1 mo)', points: 4000 }
 ];
 
 const seedDB = async () => {
@@ -122,11 +147,15 @@ const seedDB = async () => {
     // Clear existing data
     await Product.deleteMany();
     await User.deleteMany();
+    await Tier.deleteMany();
+    await Reward.deleteMany();
     console.log('Cleared existing data');
 
-    // Insert products
+    // Insert products, tiers, and rewards
     await Product.insertMany(products);
-    console.log(`Inserted ${products.length} products`);
+    await Tier.insertMany(tiers);
+    await Reward.insertMany(rewards);
+    console.log(`Inserted ${products.length} products, ${tiers.length} tiers, and ${rewards.length} rewards`);
 
     // Create admin user
     await User.create({

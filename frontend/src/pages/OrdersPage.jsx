@@ -64,8 +64,15 @@ export default function OrdersPage() {
               </div>
               <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
                 {order.items.map((item, idx) => (
-                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
-                    <span style={{ color: '#475569' }}>{item.name} <span style={{ color: '#94a3b8' }}>×{item.quantity}</span></span>
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px', alignItems: 'flex-start' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ color: '#475569' }}>{item.name} <span style={{ color: '#94a3b8' }}>×{item.quantity}</span></span>
+                      {item.customComponents && item.customComponents.length > 0 && (
+                        <div style={{ paddingLeft: '8px', marginTop: '4px', fontSize: '12px', color: '#64748b' }}>
+                          {item.customComponents.map((c, i) => <div key={i}>• {c}</div>)}
+                        </div>
+                      )}
+                    </div>
                     <span style={{ fontWeight: '600' }}>{formatINR(item.price * item.quantity)}</span>
                   </div>
                 ))}
