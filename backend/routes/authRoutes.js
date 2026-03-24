@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
-const { register, login, getProfile, updateProfile } = require('../controllers/authController');
+const { register, login, googleLogin, getProfile, updateProfile } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
 
 router.post('/register', [
@@ -14,6 +14,8 @@ router.post('/login', [
   body('email').trim().toLowerCase().isEmail().withMessage('Valid email required'),
   body('password').notEmpty().withMessage('Password is required')
 ], login);
+
+router.post('/google', googleLogin);
 
 router.get('/profile', protect, getProfile);
 router.put('/profile', protect, updateProfile);

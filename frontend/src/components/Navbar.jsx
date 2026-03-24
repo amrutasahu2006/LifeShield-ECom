@@ -1,10 +1,13 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { signInWithPopup } from 'firebase/auth'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
+import { auth, googleProvider } from '../firebase'
+import { authAPI } from '../utils/api'
 
 export default function Navbar() {
-  const { user, logout, isAdmin } = useAuth()
+  const { user, logout, isAdmin, login } = useAuth()
   const { cartCount } = useCart()
   const navigate = useNavigate()
   const [strategyOpen, setStrategyOpen] = useState(false)
@@ -18,6 +21,18 @@ export default function Navbar() {
   )
 
   const handleLogout = () => { logout(); navigate('/') }
+
+  const handleGoogleLogin = async () => {
+    try {
+      const credential = await signInWithPopup(auth, googleProvider)
+      const idToken = await credential.user.getIdToken()
+      const { data } = await authAPI.googleLogin(idToken)
+      login(data)
+      navigate(data.role === 'admin' ? '/admin' : '/')
+    } catch (err) {
+      console.error('Google navbar login failed:', err)
+    }
+  }
 
   const linkStyle = { color: '#94a3b8', padding: '8px 12px', borderRadius: '8px', fontSize: '13px', fontWeight: '500', textDecoration: 'none', whiteSpace: 'nowrap' }
 
@@ -94,6 +109,13 @@ export default function Navbar() {
             </>
           ) : (
             <>
+              <button
+                onClick={handleGoogleLogin}
+                title="Sign in with Google"
+                style={{ ...linkStyle, border: '1px solid #334155', background: '#fff', color: '#1e293b', padding: '8px 10px', fontWeight: '800', cursor: 'pointer' }}
+              >
+                G
+              </button>
               <Link to="/login" style={linkStyle}>Login</Link>
               <Link to="/register" style={{ ...linkStyle, background: '#334155', color: '#fff' }}>Register</Link>
             </>

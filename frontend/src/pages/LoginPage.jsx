@@ -3,11 +3,14 @@ import { Link, useNavigate } from 'react-router-dom'
 import { authAPI } from '../utils/api'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
+import { signInWithPopup } from 'firebase/auth'
+import { auth, googleProvider } from '../firebase'
 
 export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const { login } = useAuth()
   const { fetchCart } = useCart()
   const navigate = useNavigate()
@@ -31,6 +34,30 @@ export default function LoginPage() {
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please try again.')
     } finally { setLoading(false) }
+  }
+
+  const handleGoogleLogin = async () => {
+    setError('')
+    setGoogleLoading(true)
+    try {
+      const credential = await signInWithPopup(auth, googleProvider)
+      const idToken = await credential.user.getIdToken()
+      const { data } = await authAPI.googleLogin(idToken)
+
+      login(data)
+      await fetchCart()
+
+      if (data.role === 'admin') {
+        navigate('/admin')
+      } else {
+        navigate('/')
+      }
+    } catch (err) {
+      const message = err?.response?.data?.message || err?.message || 'Google login failed. Please try again.'
+      setError(message)
+    } finally {
+      setGoogleLoading(false)
+    }
   }
 
   return (
@@ -57,6 +84,22 @@ export default function LoginPage() {
             {loading ? 'Signing in...' : 'Sign In →'}
           </button>
         </form>
+
+        <div style={{ display: 'flex', alignItems: 'center', margin: '18px 0', gap: '12px' }}>
+          <div style={{ height: '1px', background: '#e2e8f0', flex: 1 }} />
+          <span style={{ color: '#64748b', fontSize: '12px', fontWeight: '600' }}>OR</span>
+          <div style={{ height: '1px', background: '#e2e8f0', flex: 1 }} />
+        </div>
+
+        <button
+          type="button"
+          onClick={handleGoogleLogin}
+          disabled={googleLoading}
+          style={{ width: '100%', padding: '12px 14px', background: '#fff', color: '#1e293b', borderRadius: '12px', fontWeight: '700', fontSize: '15px', cursor: googleLoading ? 'not-allowed' : 'pointer', border: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+        >
+          <span style={{ fontSize: '18px' }}>G</span>
+          {googleLoading ? 'Signing in with Google...' : 'Continue with Google'}
+        </button>
 
         <div style={{ marginTop: '24px', padding: '16px', background: '#f8fafc', borderRadius: '10px', fontSize: '13px', color: '#64748b' }}>
           <strong>Demo accounts:</strong><br />

@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
+const { admin, isFirebaseAdminReady } = require('../config/firebaseAdmin');
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET || 'lifeshield_secret', {
@@ -49,6 +50,69 @@ exports.login = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+exports.googleLogin = async (req, res) => {
+  try {
+    const { idToken } = req.body || {};
+    if (!idToken) {
+      return res.status(400).json({ message: 'Firebase ID token is required' });
+    }
+
+    if (!isFirebaseAdminReady()) {
+      return res.status(500).json({
+        message: 'Google auth is not configured on server. Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL and FIREBASE_PRIVATE_KEY.'
+      });
+    }
+
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    const normalizedEmail = String(decoded.email || '').trim().toLowerCase();
+    if (!normalizedEmail) {
+      return res.status(400).json({ message: 'Google account email is required' });
+    }
+
+    const displayName = decoded.name || normalizedEmail.split('@')[0] || 'Google User';
+    let user = await User.findOne({ email: normalizedEmail });
+
+    if (!user) {
+      user = await User.create({
+        name: displayName,
+        email: normalizedEmail,
+        password: `google_${decoded.uid}_${Date.now()}`,
+        authProvider: 'google',
+        firebaseUid: decoded.uid
+      });
+    } else {
+      let needsSave = false;
+      if (user.authProvider !== 'google') {
+        user.authProvider = 'google';
+        needsSave = true;
+      }
+      if (!user.firebaseUid) {
+        user.firebaseUid = decoded.uid;
+        needsSave = true;
+      }
+      if (!user.name && displayName) {
+        user.name = displayName;
+        needsSave = true;
+      }
+      if (needsSave) {
+        await user.save();
+      }
+    }
+
+    return res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      loyaltyPoints: user.loyaltyPoints || 0,
+      subscription: user.subscription,
+      token: generateToken(user._id)
+    });
+  } catch (err) {
+    return res.status(401).json({ message: 'Invalid Google authentication token' });
   }
 };
 

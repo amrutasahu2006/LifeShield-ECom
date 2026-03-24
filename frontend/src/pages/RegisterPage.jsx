@@ -2,11 +2,14 @@ import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authAPI } from '../utils/api'
 import { useAuth } from '../context/AuthContext'
+import { signInWithPopup } from 'firebase/auth'
+import { auth, googleProvider } from '../firebase'
 
 export default function RegisterPage() {
   const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const { login } = useAuth()
   const navigate = useNavigate()
 
@@ -21,6 +24,22 @@ export default function RegisterPage() {
     } catch (err) {
       setError(err.response?.data?.message || err.response?.data?.errors?.[0]?.msg || 'Registration failed')
     } finally { setLoading(false) }
+  }
+
+  const handleGoogleSignup = async () => {
+    setError('')
+    setGoogleLoading(true)
+    try {
+      const credential = await signInWithPopup(auth, googleProvider)
+      const idToken = await credential.user.getIdToken()
+      const { data } = await authAPI.googleLogin(idToken)
+      login(data)
+      navigate(data.role === 'admin' ? '/admin' : '/')
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Google signup failed')
+    } finally {
+      setGoogleLoading(false)
+    }
   }
 
   return (
@@ -47,6 +66,22 @@ export default function RegisterPage() {
             {loading ? 'Creating Account...' : 'Create Account →'}
           </button>
         </form>
+
+        <div style={{ display: 'flex', alignItems: 'center', margin: '18px 0', gap: '12px' }}>
+          <div style={{ height: '1px', background: '#e2e8f0', flex: 1 }} />
+          <span style={{ color: '#64748b', fontSize: '12px', fontWeight: '600' }}>OR</span>
+          <div style={{ height: '1px', background: '#e2e8f0', flex: 1 }} />
+        </div>
+
+        <button
+          type="button"
+          onClick={handleGoogleSignup}
+          disabled={googleLoading}
+          style={{ width: '100%', padding: '12px 14px', background: '#fff', color: '#1e293b', borderRadius: '12px', fontWeight: '700', fontSize: '15px', cursor: googleLoading ? 'not-allowed' : 'pointer', border: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+        >
+          <span style={{ fontSize: '18px' }}>G</span>
+          {googleLoading ? 'Signing up with Google...' : 'Continue with Google'}
+        </button>
 
         <p style={{ textAlign: 'center', marginTop: '24px', color: '#64748b', fontSize: '14px' }}>
           Already have an account? <Link to="/login" style={{ color: '#dc2626', fontWeight: '600', textDecoration: 'none' }}>Sign in</Link>
