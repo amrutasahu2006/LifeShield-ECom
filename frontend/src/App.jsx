@@ -30,8 +30,6 @@ const ProtectedRoute = ({ children }) => {
 }
 
 const UserRoute = ({ children }) => {
-  const { isAdmin } = useAuth()
-  if (isAdmin) return <Navigate to="/admin" replace />
   return children
 }
 

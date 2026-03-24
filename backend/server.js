@@ -2,11 +2,43 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
+const mongoose = require('mongoose');
+const Product = require('./models/Product');
 
 dotenv.config({ override: true });
 
 // Connect to database
 connectDB();
+
+const ensureCustomKitProduct = async () => {
+  try {
+    await Product.findOneAndUpdate(
+      { sku: 'PULL-SCM-CUSTOM' },
+      {
+        $setOnInsert: {
+          name: 'Custom Emergency Kit (Made-to-Order)',
+          description: 'Build your own emergency kit with custom selected components.',
+          price: 999,
+          category: 'Disaster Preparedness Kits',
+          stock: 999999,
+          lowStockThreshold: 10,
+          image: 'https://images.unsplash.com/photo-1612831455740-a2f6cb179db4?w=400',
+          featured: true,
+          rating: 5,
+          numReviews: 0,
+          brand: 'LifeShield Custom'
+        }
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+  } catch (error) {
+    console.error('Failed to ensure custom kit product:', error.message);
+  }
+};
+
+mongoose.connection.once('connected', () => {
+  ensureCustomKitProduct();
+});
 
 const app = express();
 

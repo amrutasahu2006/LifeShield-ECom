@@ -4,6 +4,7 @@ import { authAPI } from '../utils/api'
 import { useAuth } from '../context/AuthContext'
 import { signInWithPopup } from 'firebase/auth'
 import { auth, googleProvider } from '../firebase'
+import GoogleIcon from '../components/GoogleIcon'
 
 export default function RegisterPage() {
   const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' })
@@ -79,7 +80,7 @@ export default function RegisterPage() {
           disabled={googleLoading}
           style={{ width: '100%', padding: '12px 14px', background: '#fff', color: '#1e293b', borderRadius: '12px', fontWeight: '700', fontSize: '15px', cursor: googleLoading ? 'not-allowed' : 'pointer', border: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
         >
-          <span style={{ fontSize: '18px' }}>G</span>
+          <GoogleIcon size={18} />
           {googleLoading ? 'Signing up with Google...' : 'Continue with Google'}
         </button>
 

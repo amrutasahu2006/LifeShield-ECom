@@ -103,9 +103,14 @@ exports.getScmTransparencyStats = async (req, res) => {
     const products = await Product.find().limit(6);
     const inventory = products.map(p => ({
       name: p.name,
-      stock: p.stock,
-      max: p.stock + 100,
-      alert: p.stock <= (p.lowStockThreshold || 5)
+      stock: Number(p.stock) || 0,
+      units: Number(p.stock) || 0,
+      max: Math.max((Number(p.stock) || 0) + 100, 100),
+      color: (Number(p.stock) || 0) <= (p.lowStockThreshold || 5) ? '#dc2626' : (Number(p.stock) || 0) <= ((p.lowStockThreshold || 5) + 10) ? '#d97706' : '#16a34a',
+      alert: (Number(p.stock) || 0) <= (p.lowStockThreshold || 5)
+        ? `Low stock: ${p.name} is at ${Number(p.stock) || 0} units`
+        : null,
+      alertColor: (Number(p.stock) || 0) <= (p.lowStockThreshold || 5) ? '#dc2626' : '#d97706'
     }));
 
     const uniqueBrands = await Product.distinct('brand');
@@ -113,7 +118,14 @@ exports.getScmTransparencyStats = async (req, res) => {
       name: brand,
       region: ['North America', 'Europe', 'Asia Pacific', 'South America'][i % 4],
       status: 'Active',
-      flag: ['🇺🇸', '🇩🇪', '🇯🇵', '🇧🇷'][i % 4]
+      flag: ['🇺🇸', '🇩🇪', '🇯🇵', '🇧🇷'][i % 4],
+      rating: ['⭐⭐⭐⭐⭐ 4.9', '⭐⭐⭐⭐⭐ 4.8', '⭐⭐⭐⭐ 4.4', '⭐⭐⭐⭐ 4.3'][i % 4],
+      products: ['First Aid Kits', 'Fire Equipment', 'Preparedness Kits', 'Personal Safety'][i % 4],
+      lead: ['3 days', '5 days', '10 days', '14 days'][i % 4],
+      moq: ['25 units', '50 units', '80 units', '100 units'][i % 4],
+      tier: i < 2 ? 'Tier 1' : 'Tier 2',
+      tierColor: i < 2 ? '#dcfce7' : '#dbeafe',
+      tierText: i < 2 ? '#16a34a' : '#3b82f6'
     }));
 
     res.json({ chartData, inventory, suppliers });

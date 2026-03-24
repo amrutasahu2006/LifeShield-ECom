@@ -45,22 +45,34 @@ const suppliers = [
 export default function SCMDemandPage() {
   const [data, setData] = useState({ chartData, inventory, suppliers })
   const [loading, setLoading] = useState(true)
+  const [apiError, setApiError] = useState('')
 
   useEffect(() => {
     productAPI.getScmTransparency()
       .then(res => {
-        setData(res.data)
+        const payload = res?.data || {}
+        setData({
+          chartData: Array.isArray(payload.chartData) && payload.chartData.length > 0 ? payload.chartData : chartData,
+          inventory: Array.isArray(payload.inventory) && payload.inventory.length > 0 ? payload.inventory : inventory,
+          suppliers: Array.isArray(payload.suppliers) && payload.suppliers.length > 0 ? payload.suppliers : suppliers
+        })
+        setApiError('')
         setLoading(false)
       })
       .catch(err => {
         console.error('Failed to fetch live SCM data:', err)
+        setApiError('Live SCM data is temporarily unavailable. Showing fallback snapshot.')
         setLoading(false)
       })
   }, [])
 
+  const safeChartData = Array.isArray(data.chartData) ? data.chartData : chartData
+  const safeInventory = Array.isArray(data.inventory) ? data.inventory : inventory
+  const safeSuppliers = Array.isArray(data.suppliers) ? data.suppliers : suppliers
+
   const dynamicMaxVal = Math.max(
     120, // Minimum floor to prevent 0 division
-    ...data.chartData.map(d => Math.max(d.forecast || 0, d.actual || 0))
+    ...safeChartData.map(d => Math.max(d.forecast || 0, d.actual || 0))
   )
 
   return (
@@ -84,6 +96,16 @@ export default function SCMDemandPage() {
       </section>
 
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '48px 24px' }}>
+        {apiError && (
+          <div style={{ marginBottom: '16px', padding: '12px 14px', borderRadius: '10px', background: '#fff7ed', border: '1px solid #fdba74', color: '#9a3412', fontSize: '14px', fontWeight: '600' }}>
+            {apiError}
+          </div>
+        )}
+        {loading && (
+          <div style={{ marginBottom: '16px', padding: '12px 14px', borderRadius: '10px', background: '#eff6ff', border: '1px solid #93c5fd', color: '#1e40af', fontSize: '14px', fontWeight: '600' }}>
+            Loading latest SCM data...
+          </div>
+        )}
 
         {/* Strategy Box */}
         <div style={{ background: '#ecfdf5', border: '1px solid #6ee7b7', borderRadius: '16px', padding: '24px', marginBottom: '40px' }}>
@@ -113,7 +135,7 @@ export default function SCMDemandPage() {
             <h3 style={{ fontSize: '17px', fontWeight: '700', marginBottom: '16px' }}>📈 Demand Forecast vs Actual (2024)</h3>
             <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '20px', marginBottom: '16px' }}>
               <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end', height: '120px', marginBottom: '8px' }}>
-                {data.chartData.map((d, i) => (
+                {safeChartData.map((d, i) => (
                   <div key={d.month + i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
                     <div style={{ display: 'flex', gap: '2px', alignItems: 'flex-end', width: '100%' }}>
                       <div style={{ flex: 1, background: '#3b82f6', borderRadius: '2px 2px 0 0', height: `${(d.actual / dynamicMaxVal) * 110}px` }} />
@@ -135,7 +157,7 @@ export default function SCMDemandPage() {
           {/* Inventory */}
           <div style={{ background: '#fff', borderRadius: '20px', padding: '28px', boxShadow: '0 4px 20px rgba(0,0,0,.08)' }}>
             <h3 style={{ fontSize: '17px', fontWeight: '700', marginBottom: '20px' }}>🏭 Live Inventory Status</h3>
-            {data.inventory.map((item, i) => (
+            {safeInventory.map((item, i) => (
               <div key={item.name + i} style={{ marginBottom: item.alert ? '4px' : '14px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{ fontSize: '12px', fontWeight: '600', minWidth: '160px', flex: 1 }}>{item.name}</div>
@@ -183,7 +205,7 @@ export default function SCMDemandPage() {
 
           <div style={{ background: '#fff', borderRadius: '20px', padding: '28px', boxShadow: '0 4px 20px rgba(0,0,0,.08)' }}>
             <h3 style={{ fontSize: '17px', fontWeight: '700', marginBottom: '20px' }}>🏭 Supplier Network</h3>
-            {data.suppliers.map((s, i) => (
+            {safeSuppliers.map((s, i) => (
               <div key={s.name + i} style={{ background: '#f8fafc', borderRadius: '12px', padding: '16px', display: 'flex', gap: '12px', marginBottom: '12px', alignItems: 'flex-start' }}>
                 <div style={{ fontSize: '28px' }}>{s.flag}</div>
                 <div style={{ flex: 1 }}>
