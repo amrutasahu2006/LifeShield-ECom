@@ -9,7 +9,8 @@ exports.getDashboardStats = async (req, res) => {
         $group: {
           _id: null,
           totalOrders: { $sum: 1 },
-          totalRevenue: { $sum: { $ifNull: ['$totalPrice', 0] } }
+          totalRevenue: { $sum: { $ifNull: ['$totalPrice', 0] } },
+          totalPlatformRevenue: { $sum: { $ifNull: ['$platformFee', 0] } }
         }
       }
     ]);
@@ -58,11 +59,12 @@ exports.getDashboardStats = async (req, res) => {
       }
     ]);
 
-    const totals = summary[0] || { totalOrders: 0, totalRevenue: 0 };
+    const totals = summary[0] || { totalOrders: 0, totalRevenue: 0, totalPlatformRevenue: 0 };
 
     res.json({
       totalOrders: totals.totalOrders,
       totalRevenue: totals.totalRevenue,
+      totalPlatformRevenue: totals.totalPlatformRevenue,
       monthlyRevenue: monthlyRevenue.map((row) => ({
         year: row._id.year,
         month: row._id.month,

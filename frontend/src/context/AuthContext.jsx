@@ -15,8 +15,18 @@ export const AuthProvider = ({ children }) => {
     setUser(null)
   }
 
+  const updateUser = (partialUserData) => {
+    setUser((currentUser) => {
+      if (!currentUser) return currentUser
+
+      const mergedUser = { ...currentUser, ...partialUserData }
+      localStorage.setItem('lifeshieldUser', JSON.stringify(mergedUser))
+      return mergedUser
+    })
+  }
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAdmin: user?.role === 'admin' }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser, isAdmin: user?.role === 'admin' }}>
       {children}
     </AuthContext.Provider>
   )

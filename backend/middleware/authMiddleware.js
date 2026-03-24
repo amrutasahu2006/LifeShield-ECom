@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { ensureActiveSubscription } = require('./subscriptionMiddleware');
 
 exports.protect = async (req, res, next) => {
   let token;
@@ -12,6 +13,8 @@ exports.protect = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'lifeshield_secret');
     req.user = await User.findById(decoded.id).select('-password');
     if (!req.user) return res.status(401).json({ message: 'User not found' });
+
+    req.user = await ensureActiveSubscription(req.user);
     next();
   } catch (error) {
     if (error.name === 'TokenExpiredError') {

@@ -20,6 +20,7 @@ import CRMPersonalizationPage from './pages/CRMPersonalizationPage'
 import SCMDemandPage from './pages/SCMDemandPage'
 import UniquenessPage from './pages/UniquenessPage'
 import BuildKitPage from './pages/BuildKitPage'
+import SubscriptionPage from './pages/SubscriptionPage'
 
 const ProtectedRoute = ({ children }) => {
   const { user, isAdmin } = useAuth()
@@ -59,6 +60,7 @@ function AppContent() {
           <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
           <Route path="/order-success" element={<ProtectedRoute><OrderSuccessPage /></ProtectedRoute>} />
           <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
+          <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
           <Route path="/admin" element={<AdminRoute><AdminPage activeTab="dashboard" /></AdminRoute>} />
           <Route path="/admin/products" element={<AdminRoute><AdminPage activeTab="products" /></AdminRoute>} />
           <Route path="/admin/orders" element={<AdminRoute><AdminPage activeTab="orders" /></AdminRoute>} />

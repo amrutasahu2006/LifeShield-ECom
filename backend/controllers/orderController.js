@@ -7,6 +7,7 @@ const { isPaymentVerificationValid } = require('../utils/paymentVerification');
 
 const DEFAULT_LOW_STOCK_THRESHOLD = 5;
 const ALLOWED_ORDER_STATUSES = ['pending', 'processing', 'shipped', 'delivered'];
+const PLATFORM_COMMISSION_RATE = 0.1;
 
 const normalizeOrderStatus = (status) => (
   ALLOWED_ORDER_STATUSES.includes(status) ? status : 'pending'
@@ -113,6 +114,8 @@ exports.createOrder = async (req, res) => {
   const { shippingAddress, paymentMethod, verifiedPayment } = req.body;
   let reservedItems = [];
   try {
+    const user = await User.findById(req.user._id).select('subscription');
+
     const cart = await Cart.findOne({ user: req.user._id }).populate('items.product');
     if (!cart || cart.items.length === 0) return res.status(400).json({ message: 'Cart is empty' });
 
@@ -144,7 +147,13 @@ exports.createOrder = async (req, res) => {
     const itemsPrice = cart.totalAmount;
     const shippingPrice = itemsPrice > 3000 ? 0 : 99;
     const taxPrice = parseFloat((itemsPrice * 0.1).toFixed(2));
-    const totalPrice = parseFloat((itemsPrice + shippingPrice + taxPrice).toFixed(2));
+    let totalPrice = parseFloat((itemsPrice + shippingPrice + taxPrice).toFixed(2));
+
+    if (user?.subscription?.isActive) {
+      totalPrice = parseFloat((totalPrice * 0.9).toFixed(2));
+    }
+
+    const platformFee = parseFloat((totalPrice * PLATFORM_COMMISSION_RATE).toFixed(2));
     const isRazorpayPayment = paymentMethod === 'Razorpay';
 
     if (isRazorpayPayment) {
@@ -191,6 +200,7 @@ exports.createOrder = async (req, res) => {
       itemsPrice,
       shippingPrice,
       taxPrice,
+      platformFee,
       totalPrice,
       isPaid: true,
       paidAt: new Date(),

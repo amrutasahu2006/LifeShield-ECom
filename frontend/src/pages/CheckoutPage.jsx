@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
 import { createRazorpayOrder, orderAPI, verifyPayment } from '../utils/api'
 
 export default function CheckoutPage() {
   const { cart, fetchCart } = useCart()
+  const { user } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState(1)
@@ -12,9 +14,20 @@ export default function CheckoutPage() {
   const [errors, setErrors] = useState({})
   const [orderError, setOrderError] = useState('')
 
+  const COMMISSION_RATE = 0.1
   const shipping = cart.totalAmount > 3000 ? 0 : 99
   const tax = parseFloat((cart.totalAmount * 0.1).toFixed(2))
-  const total = parseFloat((cart.totalAmount + shipping + tax).toFixed(2))
+  const baseTotal = parseFloat((cart.totalAmount + shipping + tax).toFixed(2))
+  const subscriptionExpiry = user?.subscription?.expiryDate ? new Date(user.subscription.expiryDate) : null
+  const hasActiveSubscription = Boolean(
+    user?.subscription?.isActive &&
+    subscriptionExpiry &&
+    !Number.isNaN(subscriptionExpiry.getTime()) &&
+    subscriptionExpiry > new Date()
+  )
+  const subscriptionDiscount = hasActiveSubscription ? parseFloat((baseTotal * 0.1).toFixed(2)) : 0
+  const total = parseFloat((baseTotal - subscriptionDiscount).toFixed(2))
+  const platformFee = parseFloat((total * COMMISSION_RATE).toFixed(2))
   const formatINR = (value) => `Rs. ${Number(value).toFixed(2)}`
 
   const validateAddress = () => {
@@ -79,7 +92,7 @@ export default function CheckoutPage() {
               await fetchCart()
 
               navigate('/order-success', {
-                state: { orderId: orderData._id, total: orderData.totalPrice }
+                state: { orderId: orderData._id, total: orderData.totalPrice, platformFee: orderData.platformFee }
               })
               resolve()
             } catch (err) {
@@ -191,7 +204,13 @@ export default function CheckoutPage() {
               </div>
             ))}
             <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '12px', marginTop: '8px' }}>
-              {[['Subtotal', formatINR(cart.totalAmount)], ['Shipping', shipping === 0 ? 'FREE' : formatINR(shipping)], ['Tax', formatINR(tax)]].map(([l, v]) => (
+              {[
+                ['Subtotal', formatINR(cart.totalAmount)],
+                ['Shipping', shipping === 0 ? 'FREE' : formatINR(shipping)],
+                ['Tax', formatINR(tax)],
+                ['Premium Discount', hasActiveSubscription ? `- ${formatINR(subscriptionDiscount)}` : formatINR(0)],
+                ['Service Fee (included)', formatINR(platformFee)]
+              ].map(([l, v]) => (
                 <div key={l} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px', color: '#64748b' }}>
                   <span>{l}</span><span style={{ color: '#1e293b', fontWeight: '600' }}>{v}</span>
                 </div>

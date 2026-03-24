@@ -22,6 +22,7 @@ exports.register = async (req, res) => {
     res.status(201).json({
       _id: user._id, name: user.name, email: user.email, role: user.role,
       loyaltyPoints: user.loyaltyPoints || 0,
+      subscription: user.subscription,
       token: generateToken(user._id)
     });
   } catch (err) {
@@ -43,6 +44,7 @@ exports.login = async (req, res) => {
     res.json({
       _id: user._id, name: user.name, email: user.email, role: user.role,
       loyaltyPoints: user.loyaltyPoints || 0,
+      subscription: user.subscription,
       token: generateToken(user._id)
     });
   } catch (err) {
@@ -62,7 +64,7 @@ exports.updateProfile = async (req, res) => {
     user.safetyProfile = req.body.safetyProfile || user.safetyProfile;
     if (req.body.password) user.password = req.body.password;
     const updated = await user.save();
-    res.json({ _id: updated._id, name: updated.name, email: updated.email, role: updated.role, loyaltyPoints: updated.loyaltyPoints || 0, safetyProfile: updated.safetyProfile, token: generateToken(updated._id) });
+    res.json({ _id: updated._id, name: updated.name, email: updated.email, role: updated.role, loyaltyPoints: updated.loyaltyPoints || 0, safetyProfile: updated.safetyProfile, subscription: updated.subscription, token: generateToken(updated._id) });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

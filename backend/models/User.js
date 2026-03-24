@@ -37,6 +37,11 @@ const userSchema = new mongoose.Schema({
     state: String,
     zip: String,
     country: String
+  },
+  subscription: {
+    isActive: { type: Boolean, default: false },
+    plan: { type: String, enum: ['monthly', 'yearly'], default: null },
+    expiryDate: { type: Date, default: null }
   }
 }, { timestamps: true });
 

@@ -74,6 +74,8 @@ lifeshield/
 - Product catalog with search, filters, pagination, and featured products
 - Cart and checkout flow with stock-aware validation
 - Order processing with payment verification support
+- Subscription-based revenue model with Razorpay premium plan activation
+- Commission-based revenue model with per-order platform fee tracking
 - Admin panel for product CRUD, order status updates, and alert monitoring
 - ERP capabilities for inventory tracking, automatic stock deduction, and low-stock visibility
 - ERP order lifecycle tracking with admin-controlled status progression
@@ -212,6 +214,11 @@ npm run preview    # Preview the production build locally
 | GET    | /myorders    | ✅ Yes | Get all orders for this user  |
 | GET    | /:id         | ✅ Yes | Get specific order details    |
 
+### Subscription — `/api/subscription`
+| Method | Endpoint     | Auth? | Description                                  |
+|--------|--------------|-------|----------------------------------------------|
+| POST   | /activate    | ✅ Yes | Activate monthly/yearly premium subscription |
+
 ### Admin — `/api/admin` *(Admin JWT required)*
 | Method | Endpoint              | Description             |
 |--------|-----------------------|-------------------------|
@@ -272,6 +279,39 @@ npm run preview    # Preview the production build locally
 - Business decision-making value:
     - Helps identify growth periods, monitor sales momentum, and prioritize high-performing products.
     - Supports smarter planning for campaigns, inventory allocation, and operational targets.
+
+---
+
+## Revenue Model – Subscription System
+
+- LifeShield introduces a premium subscription layer to create recurring revenue while enhancing user value.
+- Available plans:
+    - Monthly Plan: Rs. 199
+    - Yearly Plan: Rs. 999
+- Activation workflow:
+    - User selects a plan from the Subscription page.
+    - Frontend reuses the existing Razorpay create-order and verify APIs.
+    - After successful verification, backend activates the selected subscription plan at `POST /api/subscription/activate`.
+- Subscription benefits:
+    - Premium access indicator (Premium User badge in navigation).
+    - 10% automatic discount during checkout for active subscribers.
+- Pricing impact in order flow:
+    - On order creation, if a user has an active subscription, final payable amount is reduced by 10% before payment validation and order persistence.
+    - Expired subscriptions are automatically deactivated during authenticated requests to prevent invalid discount usage.
+
+---
+
+## Revenue Model – Commission-Based System
+
+- LifeShield applies a commission-driven platform fee model for every successful order.
+- Commission percentage: 10% of the final order amount.
+- Revenue generation flow:
+    - Order total is finalized first (including applicable checkout pricing rules).
+    - Platform fee is calculated from this final amount and stored on the order as `platformFee`.
+- Where it is applied:
+    - Backend: order processing logic computes and persists platform fee per order.
+    - Frontend: checkout summary and order success page display the Service Fee (included).
+    - Admin analytics: dashboard reports total platform revenue by summing all order platform fees.
 
 ---
 

@@ -9,6 +9,14 @@ export default function Navbar() {
   const navigate = useNavigate()
   const [strategyOpen, setStrategyOpen] = useState(false)
 
+  const subscriptionExpiry = user?.subscription?.expiryDate ? new Date(user.subscription.expiryDate) : null
+  const hasActivePremium = Boolean(
+    user?.subscription?.isActive &&
+    subscriptionExpiry &&
+    !Number.isNaN(subscriptionExpiry.getTime()) &&
+    subscriptionExpiry > new Date()
+  )
+
   const handleLogout = () => { logout(); navigate('/') }
 
   const linkStyle = { color: '#94a3b8', padding: '8px 12px', borderRadius: '8px', fontSize: '13px', fontWeight: '500', textDecoration: 'none', whiteSpace: 'nowrap' }
@@ -73,6 +81,12 @@ export default function Navbar() {
           )}
           {user ? (
             <>
+              <Link to="/subscription" style={linkStyle}>Subscription</Link>
+              {hasActivePremium && (
+                <span style={{ background: '#16a34a', color: '#fff', padding: '6px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: '700', marginLeft: '4px' }}>
+                  Premium User
+                </span>
+              )}
               <Link to="/orders" style={linkStyle}>My Orders</Link>
               <button onClick={handleLogout} style={{ ...linkStyle, background: 'rgba(255,255,255,0.05)', border: '1px solid #334155', cursor: 'pointer' }}>
                 Logout ({user.name?.split(' ')[0]})

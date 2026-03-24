@@ -11,7 +11,7 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
   const navigate = useNavigate()
   const [products, setProducts] = useState([])
   const [orders, setOrders] = useState([])
-  const [dashboardStats, setDashboardStats] = useState({ totalOrders: 0, totalRevenue: 0, monthlyRevenue: [], topSellingProducts: [] })
+  const [dashboardStats, setDashboardStats] = useState({ totalOrders: 0, totalRevenue: 0, totalPlatformRevenue: 0, monthlyRevenue: [], topSellingProducts: [] })
   const [statsLoading, setStatsLoading] = useState(true)
   const [statsError, setStatsError] = useState('')
   const [alerts, setAlerts] = useState([])
@@ -38,7 +38,7 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
       .then((r) => setDashboardStats(r.data))
       .catch((err) => {
         setStatsError(err.response?.data?.message || 'Unable to load analytics data')
-        setDashboardStats({ totalOrders: 0, totalRevenue: 0, monthlyRevenue: [], topSellingProducts: [] })
+        setDashboardStats({ totalOrders: 0, totalRevenue: 0, totalPlatformRevenue: 0, monthlyRevenue: [], topSellingProducts: [] })
       })
       .finally(() => setStatsLoading(false))
   }
@@ -139,6 +139,7 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
 
   // Dashboard Metrics Calculations
   const totalRevenue = Number(dashboardStats.totalRevenue || 0)
+  const totalPlatformRevenue = Number(dashboardStats.totalPlatformRevenue || 0)
   const totalOrders = Number(dashboardStats.totalOrders || 0)
   const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'processing')
   const unreadAlerts = alerts.filter(a => !a.isRead)
@@ -333,6 +334,14 @@ export default function AdminPage({ activeTab = 'dashboard' }) {
                     <div>
                       <div style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Revenue</div>
                       <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#0f172a' }}>{formatINR(totalRevenue)}</div>
+                    </div>
+                  </div>
+
+                  <div className="metric-card">
+                    <div className="metric-icon" style={{ background: '#dbeafe', color: '#1d4ed8' }}><FiActivity /></div>
+                    <div>
+                      <div style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Platform Revenue</div>
+                      <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#0f172a' }}>{formatINR(totalPlatformRevenue)}</div>
                     </div>
                   </div>
 

@@ -60,6 +60,10 @@ export const paymentAPI = {
   verifyPayment: (data) => API.post('/payment/verify', data),
 }
 
+export const subscriptionAPI = {
+  activate: (plan) => API.post('/subscription/activate', { plan }),
+}
+
 export const createRazorpayOrder = (amount) => paymentAPI.createRazorpayOrder(amount)
 export const verifyPayment = (data) => paymentAPI.verifyPayment(data)
 
