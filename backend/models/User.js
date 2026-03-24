@@ -42,7 +42,14 @@ const userSchema = new mongoose.Schema({
   },
   subscription: {
     isActive: { type: Boolean, default: false },
-    plan: { type: String, enum: ['monthly', 'yearly'], default: null },
+    plan: {
+      type: String,
+      default: null,
+      validate: {
+        validator: (value) => value === null || ['monthly', 'yearly'].includes(value),
+        message: 'subscription.plan must be monthly, yearly, or null'
+      }
+    },
     expiryDate: { type: Date, default: null }
   }
 }, { timestamps: true });

@@ -7,7 +7,10 @@ const { isPaymentVerificationValid } = require('../utils/paymentVerification');
 
 const DEFAULT_LOW_STOCK_THRESHOLD = 5;
 const ALLOWED_ORDER_STATUSES = ['pending', 'processing', 'shipped', 'delivered'];
-const PLATFORM_COMMISSION_RATE = 0.1;
+const parsedCommissionRate = Number(process.env.PLATFORM_COMMISSION_RATE);
+const PLATFORM_COMMISSION_RATE = Number.isFinite(parsedCommissionRate) && parsedCommissionRate >= 0
+  ? parsedCommissionRate
+  : 0.1;
 
 const normalizeOrderStatus = (status) => (
   ALLOWED_ORDER_STATUSES.includes(status) ? status : 'pending'

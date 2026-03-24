@@ -3,6 +3,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const mongoose = require('mongoose');
+const http = require('http');
 const Product = require('./models/Product');
 
 dotenv.config({ override: true });
@@ -68,4 +69,51 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`LIFESHIELD server running on port ${PORT}`));
+const server = app.listen(PORT, () => console.log(`LIFESHIELD server running on port ${PORT}`));
+
+const isExistingLifeshieldServerRunning = () => new Promise((resolve) => {
+  const request = http.request(
+    {
+      hostname: '127.0.0.1',
+      port: PORT,
+      path: '/',
+      method: 'GET',
+      timeout: 1500
+    },
+    (response) => {
+      let body = '';
+      response.on('data', (chunk) => {
+        body += chunk;
+      });
+      response.on('end', () => {
+        resolve(response.statusCode === 200 && body.includes('LIFESHIELD API is running'));
+      });
+    }
+  );
+
+  request.on('error', () => resolve(false));
+  request.on('timeout', () => {
+    request.destroy();
+    resolve(false);
+  });
+  request.end();
+});
+
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    isExistingLifeshieldServerRunning().then((isRunning) => {
+      if (isRunning) {
+        console.log(`LIFESHIELD backend is already running on port ${PORT}.`);
+        process.exit(0);
+      }
+
+      console.error(`Port ${PORT} is already in use by another process.`);
+      console.error('Stop the existing process on this port or change PORT in backend/.env.');
+      process.exit(1);
+    });
+    return;
+  }
+
+  console.error('Server startup error:', error.message);
+  process.exit(1);
+});
