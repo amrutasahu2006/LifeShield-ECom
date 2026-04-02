@@ -44,8 +44,10 @@ mongoose.connection.once('connected', () => {
 const app = express();
 
 // Middleware
+app.disable('x-powered-by');
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '20kb' }));
+app.use(express.urlencoded({ extended: false, limit: '20kb' }));
 
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));

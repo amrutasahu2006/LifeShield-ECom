@@ -2,11 +2,6 @@ const Order = require('../models/Order');
 const Tier = require('../models/Tier');
 const Reward = require('../models/Reward');
 
-const parsedCommissionRate = Number(process.env.PLATFORM_COMMISSION_RATE);
-const PLATFORM_COMMISSION_RATE = Number.isFinite(parsedCommissionRate) && parsedCommissionRate >= 0
-  ? parsedCommissionRate
-  : 0.1;
-
 exports.getDashboardStats = async (req, res) => {
   try {
     const summary = await Order.aggregate([
@@ -15,20 +10,7 @@ exports.getDashboardStats = async (req, res) => {
           _id: null,
           totalOrders: { $sum: 1 },
           totalRevenue: { $sum: { $ifNull: ['$totalPrice', 0] } },
-          totalPlatformRevenue: {
-            $sum: {
-              $cond: [
-                { $gt: [{ $ifNull: ['$platformFee', 0] }, 0] },
-                { $ifNull: ['$platformFee', 0] },
-                {
-                  $multiply: [
-                    { $ifNull: ['$totalPrice', 0] },
-                    PLATFORM_COMMISSION_RATE
-                  ]
-                }
-              ]
-            }
-          }
+          totalPlatformRevenue: { $sum: { $ifNull: ['$platformFee', 0] } }
         }
       }
     ]);
