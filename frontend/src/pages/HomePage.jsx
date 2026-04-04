@@ -20,6 +20,11 @@ export default function HomePage() {
 
   return (
     <div>
+      {/* Urgency Promo Banner (CRO) */}
+      <Link to="/campaign/survival-kit" style={{ display: 'block', textDecoration: 'none', background: '#dc2626', color: '#fff', textAlign: 'center', padding: '12px 24px', fontSize: '14px', fontWeight: 'bold', letterSpacing: '0.5px', cursor: 'pointer' }}>
+        🔥 NATIONAL SAFETY MONTH: Free Expedited Shipping on our VIP 72-Hour Survival Kit! Click here to claim 50% Off ➔
+      </Link>
+
       {/* Hero */}
       <section style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #7f1d1d 100%)', color: '#fff', padding: '80px 24px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(220,38,38,0.15) 0%, transparent 60%), radial-gradient(circle at 80% 50%, rgba(220,38,38,0.1) 0%, transparent 60%)' }} />
@@ -42,6 +47,16 @@ export default function HomePage() {
               <div style={{ fontSize: '28px', fontWeight: '800', color: '#dc2626' }}>{num}</div>
               <div style={{ fontSize: '13px', color: '#94a3b8' }}>{label}</div>
             </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Social Proof / Trust Identifiers (CRO) */}
+      <section style={{ padding: '24px', background: '#f1f5f9', borderBottom: '1px solid #e2e8f0', textAlign: 'center' }}>
+        <p style={{ color: '#64748b', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '16px' }}>As Featured In & Trusted By</p>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '40px', flexWrap: 'wrap', opacity: 0.6, filter: 'grayscale(100%)' }}>
+          {['Forbes', 'Wall Street Journal', 'National Red Cross Networks', 'Wired', 'Safety First Weekly'].map(brand => (
+             <span key={brand} style={{ fontSize: '20px', fontWeight: '900', color: '#1e293b', fontFamily: 'serif' }}>{brand}</span>
           ))}
         </div>
       </section>

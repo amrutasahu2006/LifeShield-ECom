@@ -49,7 +49,7 @@ export default function Footer() {
           </div>
         </div>
         <div style={{ borderTop: '1px solid #1e293b', paddingTop: '24px', textAlign: 'center', fontSize: '12px' }}>
-          © 2024 LIFESHIELD – Preparedness Made Simple | Academic Project
+          © 2026 LIFESHIELD – Preparedness Made Simple
         </div>
       </div>
     </footer>

@@ -21,6 +21,7 @@ import SCMDemandPage from './pages/SCMDemandPage'
 import UniquenessPage from './pages/UniquenessPage'
 import BuildKitPage from './pages/BuildKitPage'
 import SubscriptionPage from './pages/SubscriptionPage'
+import LandingPage from './pages/LandingPage'
 
 const ProtectedRoute = ({ children }) => {
   const { user, isAdmin } = useAuth()
@@ -43,10 +44,11 @@ const AdminRoute = ({ children }) => {
 function AppContent() {
   const location = useLocation()
   const isAdminRoute = location.pathname.startsWith('/admin')
+  const isCampaignRoute = location.pathname.startsWith('/campaign')
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      {isAdminRoute ? <AdminNavbar /> : <Navbar />}
+      {!isCampaignRoute && (isAdminRoute ? <AdminNavbar /> : <Navbar />)}
       <main style={{ flex: 1 }}>
         <Routes>
           <Route path="/" element={<UserRoute><HomePage /></UserRoute>} />
@@ -68,6 +70,7 @@ function AppContent() {
           <Route path="/scm-dashboard" element={<UserRoute><SCMDemandPage /></UserRoute>} />
           <Route path="/why-us" element={<UserRoute><UniquenessPage /></UserRoute>} />
           <Route path="/build-kit" element={<UserRoute><BuildKitPage /></UserRoute>} />
+          <Route path="/campaign/survival-kit" element={<LandingPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
