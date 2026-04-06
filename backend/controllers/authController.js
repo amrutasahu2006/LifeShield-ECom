@@ -73,33 +73,38 @@ exports.login = async (req, res) => {
 
 exports.googleLogin = async (req, res) => {
   try {
-    const { idToken } = req.body || {};
-    if (!idToken) {
-      return res.status(400).json({ message: 'Firebase ID token is required' });
+    const { idToken, name, email, googleId, uid } = req.body || {};
+    const providerUid = googleId || uid;
+    const fallbackEmail = String(email || '').trim().toLowerCase();
+    const fallbackName = String(name || '').trim();
+
+    if (!idToken && (!fallbackEmail || !providerUid)) {
+      return res.status(400).json({ message: 'Firebase ID token or Google profile data is required' });
     }
 
-    if (!isFirebaseAdminReady()) {
+    if (idToken && !isFirebaseAdminReady()) {
       return res.status(500).json({
         message: 'Google auth is not configured on server. Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL and FIREBASE_PRIVATE_KEY.'
       });
     }
 
-    const decoded = await admin.auth().verifyIdToken(idToken);
-    const normalizedEmail = String(decoded.email || '').trim().toLowerCase();
+    const decoded = idToken ? await admin.auth().verifyIdToken(idToken) : null;
+    const normalizedEmail = String(decoded?.email || fallbackEmail).trim().toLowerCase();
     if (!normalizedEmail) {
       return res.status(400).json({ message: 'Google account email is required' });
     }
 
-    const displayName = decoded.name || normalizedEmail.split('@')[0] || 'Google User';
+    const displayName = decoded?.name || fallbackName || normalizedEmail.split('@')[0] || 'Google User';
+    const firebaseUid = decoded?.uid || providerUid;
     let user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
       user = await User.create({
         name: displayName,
         email: normalizedEmail,
-        password: `google_${decoded.uid}_${Date.now()}`,
+        password: `google_${firebaseUid || Date.now()}`,
         authProvider: 'google',
-        firebaseUid: decoded.uid
+        firebaseUid
       });
     } else {
       let needsSave = false;
@@ -107,11 +112,11 @@ exports.googleLogin = async (req, res) => {
         user.authProvider = 'google';
         needsSave = true;
       }
-      if (!user.firebaseUid) {
-        user.firebaseUid = decoded.uid;
+      if (!user.firebaseUid && firebaseUid) {
+        user.firebaseUid = firebaseUid;
         needsSave = true;
       }
-      if (!user.name && displayName) {
+      if ((!user.name || user.name === user.email.split('@')[0]) && displayName) {
         user.name = displayName;
         needsSave = true;
       }

@@ -57,6 +57,8 @@ app.use('/api/orders', require('./routes/orderRoutes'));
 app.use('/api/payment', require('./routes/paymentRoutes'));
 app.use('/api/subscription', require('./routes/subscriptionRoutes'));
 app.use('/api/loyalty', require('./routes/loyaltyRoutes'));
+app.use('/api/trivia', require('./routes/triviaRoutes'));
+app.use('/api', require('./controllers/threatController'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 
 // Health check

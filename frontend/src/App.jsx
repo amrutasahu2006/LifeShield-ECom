@@ -22,6 +22,7 @@ import UniquenessPage from './pages/UniquenessPage'
 import BuildKitPage from './pages/BuildKitPage'
 import SubscriptionPage from './pages/SubscriptionPage'
 import LandingPage from './pages/LandingPage'
+import PwaBadge from './components/PwaBadge'
 
 const ProtectedRoute = ({ children }) => {
   const { user, isAdmin } = useAuth()
@@ -61,6 +62,7 @@ function AppContent() {
           <Route path="/order-success" element={<ProtectedRoute><OrderSuccessPage /></ProtectedRoute>} />
           <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
           <Route path="/subscription" element={<ProtectedRoute><SubscriptionPage /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
           <Route path="/admin" element={<AdminRoute><AdminPage activeTab="dashboard" /></AdminRoute>} />
           <Route path="/admin/products" element={<AdminRoute><AdminPage activeTab="products" /></AdminRoute>} />
           <Route path="/admin/orders" element={<AdminRoute><AdminPage activeTab="orders" /></AdminRoute>} />
@@ -75,6 +77,7 @@ function AppContent() {
         </Routes>
       </main>
       <Footer />
+      <PwaBadge />
     </div>
   )
 }

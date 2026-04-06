@@ -1,17 +1,15 @@
-import { initializeApp } from 'firebase/app'
-import { getAuth, GoogleAuthProvider } from 'firebase/auth'
+import { initializeApp } from "firebase/app";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyAFUtiLB-E_3XVNo3HgIByy8EnuQlXd4gM',
-  authDomain: 'ecom-lifeshield.firebaseapp.com',
-  projectId: 'ecom-lifeshield',
-  storageBucket: 'ecom-lifeshield.firebasestorage.app',
-  messagingSenderId: '388157007401',
-  appId: '1:388157007401:web:ddefa4f6335a6fbcf35e38'
-}
+  apiKey: "AIzaSyCjIWgo-M6A_0MLok-tLuEtvJM25CTvY20",
+  authDomain: "lifeshield-ecom1.firebaseapp.com",
+  projectId: "lifeshield-ecom1",
+  storageBucket: "lifeshield-ecom1.firebasestorage.app",
+  messagingSenderId: "308682892298",
+  appId: "1:308682892298:web:7fd1f05afa756b7676abf3"
+};
 
-const app = initializeApp(firebaseConfig)
-const auth = getAuth(app)
-const googleProvider = new GoogleAuthProvider()
-
-export { app, auth, googleProvider }
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const googleProvider = new GoogleAuthProvider();

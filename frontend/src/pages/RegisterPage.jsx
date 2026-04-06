@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { authAPI } from '../utils/api'
 import { useAuth } from '../context/AuthContext'
-import { signInWithPopup } from 'firebase/auth'
+import axios from 'axios'
+import { createUserWithEmailAndPassword, signInWithPopup, updateProfile } from 'firebase/auth'
 import { auth, googleProvider } from '../firebase'
 import GoogleIcon from '../components/GoogleIcon'
 
@@ -14,30 +14,45 @@ export default function RegisterPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
 
-  const handleSubmit = async (e) => {
+  const syncFirebaseUser = async (firebaseUser, fallbackName) => {
+    const payload = {
+      name: firebaseUser.displayName || fallbackName || '',
+      email: firebaseUser.email || '',
+      uid: firebaseUser.uid,
+      googleId: firebaseUser.uid
+    }
+
+    const { data } = await axios.post('/api/auth/google', payload)
+    login(data)
+    navigate('/dashboard')
+  }
+
+  const handleEmailRegister = async (e) => {
     e.preventDefault()
-    if (form.password !== form.confirmPassword) { setError('Passwords do not match'); return }
-    if (form.password.length < 6) { setError('Password must be at least 6 characters'); return }
-    setError(''); setLoading(true)
+    if (form.password !== form.confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
+
+    setError('')
+    setLoading(true)
     try {
-      const { data } = await authAPI.register({ name: form.name, email: form.email, password: form.password })
-      login(data); navigate('/')
+      const userCredential = await createUserWithEmailAndPassword(auth, form.email, form.password)
+      await updateProfile(userCredential.user, { displayName: form.name })
+      await syncFirebaseUser({ ...userCredential.user, displayName: form.name }, form.name)
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data?.errors?.[0]?.msg || 'Registration failed')
+      setError(err?.message || 'Registration failed')
     } finally { setLoading(false) }
   }
 
-  const handleGoogleSignup = async () => {
+  const handleGoogleRegister = async () => {
     setError('')
     setGoogleLoading(true)
     try {
       const credential = await signInWithPopup(auth, googleProvider)
-      const idToken = await credential.user.getIdToken()
-      const { data } = await authAPI.googleLogin(idToken)
-      login(data)
-      navigate(data.role === 'admin' ? '/admin' : '/')
+      await syncFirebaseUser(credential.user, credential.user.displayName)
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Google signup failed')
+      setError(err?.message || 'Google signup failed')
     } finally {
       setGoogleLoading(false)
     }
@@ -54,7 +69,7 @@ export default function RegisterPage() {
 
         {error && <div style={{ background: '#fee2e2', color: '#dc2626', padding: '12px 16px', borderRadius: '10px', marginBottom: '20px', fontSize: '14px' }}>{error}</div>}
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleEmailRegister}>
           {[['name','Full Name','text','John Doe'],['email','Email Address','email','john@example.com'],['password','Password','password','Min 6 characters'],['confirmPassword','Confirm Password','password','Repeat your password']].map(([field, label, type, ph]) => (
             <div key={field} style={{ marginBottom: '18px' }}>
               <label style={{ display: 'block', fontWeight: '600', marginBottom: '8px', color: '#374151', fontSize: '14px' }}>{label}</label>
@@ -68,21 +83,21 @@ export default function RegisterPage() {
           </button>
         </form>
 
+        <button
+          type="button"
+          onClick={handleGoogleRegister}
+          disabled={googleLoading}
+          style={{ width: '100%', padding: '12px 14px', background: '#fff', color: '#1e293b', borderRadius: '12px', fontWeight: '700', fontSize: '15px', cursor: googleLoading ? 'not-allowed' : 'pointer', border: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginTop: '14px' }}
+        >
+          <GoogleIcon size={18} />
+          {googleLoading ? 'Signing up with Google...' : 'Continue with Google'}
+        </button>
+
         <div style={{ display: 'flex', alignItems: 'center', margin: '18px 0', gap: '12px' }}>
           <div style={{ height: '1px', background: '#e2e8f0', flex: 1 }} />
           <span style={{ color: '#64748b', fontSize: '12px', fontWeight: '600' }}>OR</span>
           <div style={{ height: '1px', background: '#e2e8f0', flex: 1 }} />
         </div>
-
-        <button
-          type="button"
-          onClick={handleGoogleSignup}
-          disabled={googleLoading}
-          style={{ width: '100%', padding: '12px 14px', background: '#fff', color: '#1e293b', borderRadius: '12px', fontWeight: '700', fontSize: '15px', cursor: googleLoading ? 'not-allowed' : 'pointer', border: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
-        >
-          <GoogleIcon size={18} />
-          {googleLoading ? 'Signing up with Google...' : 'Continue with Google'}
-        </button>
 
         <p style={{ textAlign: 'center', marginTop: '24px', color: '#64748b', fontSize: '14px' }}>
           Already have an account? <Link to="/login" style={{ color: '#dc2626', fontWeight: '600', textDecoration: 'none' }}>Sign in</Link>

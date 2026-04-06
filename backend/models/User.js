@@ -9,6 +9,16 @@ const userSchema = new mongoose.Schema({
   firebaseUid: { type: String, default: null },
   role: { type: String, enum: ['user', 'admin'], default: 'user' },
   loyaltyPoints: { type: Number, default: 0, min: 0 },
+  shieldPoints: { type: Number, default: 0, min: 0 },
+  lastTriviaDate: { type: Date, default: null },
+  pointHistory: [
+    {
+      action: { type: String, required: true },
+      points: { type: String, required: true },
+      type: { type: String, enum: ['earn', 'redeem', 'bonus'], default: 'earn' },
+      date: { type: Date, default: Date.now }
+    }
+  ],
   loyaltyActivity: [
     {
       type: { type: String, enum: ['earn', 'redeem', 'bonus'], default: 'earn' },

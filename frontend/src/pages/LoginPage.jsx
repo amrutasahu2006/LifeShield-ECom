@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { authAPI } from '../utils/api'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
-import { signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth'
+import axios from 'axios'
+import { signInWithEmailAndPassword, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth'
 import { auth, googleProvider } from '../firebase'
 import GoogleIcon from '../components/GoogleIcon'
 
@@ -20,26 +21,34 @@ export default function LoginPage() {
   const { fetchCart } = useCart()
   const navigate = useNavigate()
 
-  const handleSubmit = async (e) => {
+  const syncFirebaseLogin = async (firebaseUser) => {
+    const payload = {
+      name: firebaseUser.displayName || (firebaseUser.email ? firebaseUser.email.split('@')[0] : 'User'),
+      email: firebaseUser.email || '',
+      uid: firebaseUser.uid,
+      googleId: firebaseUser.uid
+    }
+
+    const { data } = await axios.post('/api/auth/google', payload)
+    login(data)
+    await fetchCart()
+
+    if (data.role === 'admin') {
+      navigate('/admin')
+    } else {
+      navigate('/')
+    }
+  }
+
+  const handleEmailSignIn = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
     try {
-      const { data } = await authAPI.login({
-        email: form.email.trim(),
-        password: form.password
-      })
-      login(data)
-      await fetchCart()
-
-      // Redirect based on role
-      if (data.role === 'admin') {
-        navigate('/admin')
-      } else {
-        navigate('/')
-      }
+      const userCredential = await signInWithEmailAndPassword(auth, form.email.trim(), form.password)
+      await syncFirebaseLogin(userCredential.user)
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.')
+      setError(err.response?.data?.message || err.message || 'Login failed. Please try again.')
     } finally { 
       setLoading(false) 
     }
@@ -127,22 +136,12 @@ export default function LoginPage() {
     }
   }
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleSignIn = async () => {
     setError('')
     setGoogleLoading(true)
     try {
       const credential = await signInWithPopup(auth, googleProvider)
-      const idToken = await credential.user.getIdToken()
-      const { data } = await authAPI.googleLogin(idToken)
-
-      login(data)
-      await fetchCart()
-
-      if (data.role === 'admin') {
-        navigate('/admin')
-      } else {
-        navigate('/')
-      }
+      await syncFirebaseLogin(credential.user)
     } catch (err) {
       const message = err?.response?.data?.message || err?.message || 'Google login failed. Please try again.'
       setError(message)
@@ -162,7 +161,7 @@ export default function LoginPage() {
 
         {error && <div style={{ background: '#fee2e2', color: '#dc2626', padding: '12px 16px', borderRadius: '10px', marginBottom: '20px', fontSize: '14px', fontWeight: '500' }}>{error}</div>}
 
-        <form onSubmit={loginMode === 'email' ? handleSubmit : (otpSent ? verifyOTP : requestOTP)}>
+        <form onSubmit={loginMode === 'email' ? handleEmailSignIn : (otpSent ? verifyOTP : requestOTP)}>
           {/* Email/Password Mode */}
           {loginMode === 'email' && (
             <>
@@ -249,7 +248,7 @@ export default function LoginPage() {
 
         <button
           type="button"
-          onClick={handleGoogleLogin}
+          onClick={handleGoogleSignIn}
           disabled={googleLoading}
           style={{ width: '100%', padding: '12px 14px', background: '#fff', color: '#1e293b', borderRadius: '12px', fontWeight: '700', fontSize: '15px', cursor: googleLoading ? 'not-allowed' : 'pointer', border: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
         >

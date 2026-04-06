@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { productAPI } from '../utils/api'
 import ProductCard from '../components/ProductCard'
+import SafetyTriviaCard from '../components/SafetyTriviaCard'
+import ThreatIntelWidget from '../components/ThreatIntelWidget'
+import { useAuth } from '../context/AuthContext'
 
 const categories = [
   { name: 'First Aid Kits', icon: '🩺', color: '#ef4444', desc: 'Professional medical supplies' },
@@ -11,6 +14,7 @@ const categories = [
 ]
 
 export default function HomePage() {
+  const { user } = useAuth()
   const [featured, setFeatured] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -50,6 +54,15 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+      {user && (
+        <section style={{ padding: '36px 24px', background: 'linear-gradient(180deg, #0f172a 0%, #111827 45%, #f8fafc 100%)' }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gap: '20px', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+            <ThreatIntelWidget />
+            <SafetyTriviaCard />
+          </div>
+        </section>
+      )}
 
       {/* Social Proof / Trust Identifiers (CRO) */}
       <section style={{ padding: '24px', background: '#f1f5f9', borderBottom: '1px solid #e2e8f0', textAlign: 'center' }}>
